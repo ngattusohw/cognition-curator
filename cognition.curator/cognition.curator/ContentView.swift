@@ -28,7 +28,7 @@ struct ContentView: View {
                     Text("Review")
                 }
             
-            ProgressView()
+            ProgressStatsView()
                 .tabItem {
                     Image(systemName: "chart.line.uptrend.xyaxis")
                     Text("Progress")

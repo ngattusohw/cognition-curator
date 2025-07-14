@@ -203,9 +203,9 @@ struct DeckCardView: View {
             }
             
             // Progress bar
-//            ProgressView(value: getProgressValue(for: deck))
-//                .progressViewStyle(.linear)
-//                .scaleEffect(x: 1, y: 1.5, anchor: .center)
+            ProgressView(value: getProgressValue(for: deck))
+                .progressViewStyle(.linear)
+                .scaleEffect(x: 1, y: 1.5, anchor: .center)
             
             // Footer
             HStack {
@@ -243,6 +243,14 @@ struct DeckCardView: View {
         let formatter = RelativeDateTimeFormatter()
         formatter.unitsStyle = .abbreviated
         return formatter.localizedString(for: date, relativeTo: Date())
+    }
+    
+    private func getProgressValue(for deck: Deck) -> Double {
+        let cards = deck.flashcards?.allObjects as? [Flashcard] ?? []
+        guard !cards.isEmpty else { return 0 }
+        
+        let reviewedCards = cards.filter { !($0.reviewSessions?.allObjects.isEmpty ?? true) }
+        return Double(reviewedCards.count) / Double(cards.count)
     }
 }
 

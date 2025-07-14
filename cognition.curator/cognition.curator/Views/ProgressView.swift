@@ -2,7 +2,7 @@ import SwiftUI
 import UIKit
 import CoreData
 
-struct ProgressView: View {
+struct ProgressStatsView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @State private var selectedTimeframe: Timeframe = .week
     @State private var currentStreak = 0
@@ -362,6 +362,6 @@ struct ActivityItem {
 }
 
 #Preview {
-    ProgressView()
+    ProgressStatsView()
         .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
 } 

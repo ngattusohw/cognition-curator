@@ -106,9 +106,9 @@ struct ReviewView: View {
                     .foregroundColor(.secondary)
             }
             
-//            ProgressView(value: Double(currentCardIndex), total: Double(cardsToReview.count))
-//                .progressViewStyle(.linear)
-//                .scaleEffect(x: 1, y: 2, anchor: .center)
+            ProgressView(value: Double(currentCardIndex), total: Double(cardsToReview.count))
+                .progressViewStyle(.linear)
+                .scaleEffect(x: 1, y: 2, anchor: .center)
         }
     }
     

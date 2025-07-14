@@ -101,9 +101,9 @@ struct DeckDetailView: View {
             }
             
             // Progress bar
-//            ProgressView(value: getProgressValue())
-//                .progressViewStyle(.linear)
-//                .scaleEffect(x: 1, y: 2, anchor: .center)
+            ProgressView(value: getProgressValue())
+                .progressViewStyle(.linear)
+                .scaleEffect(x: 1, y: 2, anchor: .center)
         }
         .padding(20)
         .background(Color(uiColor: UIColor.systemBackground))
