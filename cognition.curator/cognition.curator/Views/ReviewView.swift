@@ -4,6 +4,8 @@ import CoreData
 
 struct ReviewView: View {
     @Environment(\.managedObjectContext) private var viewContext
+    @Binding var forceReview: Bool
+    
     @State private var cardsToReview: [Flashcard] = []
     @State private var currentCardIndex = 0
     @State private var showingAnswer = false
@@ -27,7 +29,12 @@ struct ReviewView: View {
             .navigationTitle("Review")
             .navigationBarTitleDisplayMode(.large)
             .onAppear {
-                loadCardsForReview()
+                if forceReview {
+                    loadCardsForReview(force: true)
+                    forceReview = false
+                } else {
+                    loadCardsForReview()
+                }
             }
         }
     }
@@ -247,7 +254,7 @@ struct ReviewView: View {
     }
     
     private func loadCardsForReview(force: Bool = false) {
-        cardsToReview = SpacedRepetitionService.shared.getCardsForTodaySession(context: viewContext, limit: force ? 50 : 20)
+        cardsToReview = SpacedRepetitionService.shared.getCardsForTodaySession(context: viewContext, limit: force ? 50 : 20, force: force)
         currentCardIndex = 0
         showingAnswer = false
         reviewSessionStartTime = Date()
@@ -326,6 +333,6 @@ struct DifficultyButton: View {
 }
 
 #Preview {
-    ReviewView()
+    ReviewView(forceReview: .constant(false))
         .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
 } 

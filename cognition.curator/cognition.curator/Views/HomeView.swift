@@ -9,6 +9,9 @@ struct HomeView: View {
         animation: .default)
     private var decks: FetchedResults<Deck>
     
+    @Binding var selectedTab: Int
+    @Binding var forceReview: Bool
+    
     @State private var showingCreateDeck = false
     @State private var cardsDueToday = 0
     @State private var currentStreak = 0
@@ -149,6 +152,8 @@ struct HomeView: View {
                 
                 Button(action: {
                     // Navigate to review
+                    forceReview = false
+                    selectedTab = 2
                 }) {
                     HStack {
                         Text("Start Review")
@@ -170,6 +175,8 @@ struct HomeView: View {
                 
                 Button(action: {
                     // Navigate to review anyway
+                    forceReview = true
+                    selectedTab = 2
                 }) {
                     HStack {
                         Text("Review Anyway")
@@ -331,6 +338,6 @@ struct QuickActionButton: View {
 }
 
 #Preview {
-    HomeView()
+    HomeView(selectedTab: .constant(0), forceReview: .constant(false))
         .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
 } 

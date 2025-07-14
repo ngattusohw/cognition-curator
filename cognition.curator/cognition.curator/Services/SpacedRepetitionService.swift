@@ -78,9 +78,24 @@ class SpacedRepetitionService {
     }
     
     // MARK: - Get Cards for Today's Review Session
-    func getCardsForTodaySession(context: NSManagedObjectContext, limit: Int = 20) -> [Flashcard] {
-        let dueCards = getCardsDueForReview(context: context)
-        return Array(dueCards.prefix(limit))
+    func getCardsForTodaySession(context: NSManagedObjectContext, limit: Int = 20, force: Bool = false) -> [Flashcard] {
+        if force {
+            // When forcing, get all cards regardless of due date
+            let request: NSFetchRequest<Flashcard> = Flashcard.fetchRequest()
+            request.fetchLimit = limit
+            request.sortDescriptors = [NSSortDescriptor(keyPath: \Flashcard.createdAt, ascending: false)]
+            
+            do {
+                return try context.fetch(request)
+            } catch {
+                print("Error fetching cards for forced review: \(error)")
+                return []
+            }
+        } else {
+            // Normal behavior - only get cards that are due
+            let dueCards = getCardsDueForReview(context: context)
+            return Array(dueCards.prefix(limit))
+        }
     }
     
     // MARK: - Calculate Review Statistics
