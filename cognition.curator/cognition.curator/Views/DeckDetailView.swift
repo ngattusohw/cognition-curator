@@ -9,15 +9,27 @@ struct DeckDetailView: View {
     @State private var showingEditDeck = false
     @State private var searchText = ""
     
+    // Use @FetchRequest to automatically update when cards are added/removed
+    @FetchRequest private var flashcards: FetchedResults<Flashcard>
+    
+    init(deck: Deck) {
+        self.deck = deck
+        // Create a fetch request that filters cards by the deck
+        self._flashcards = FetchRequest(
+            sortDescriptors: [NSSortDescriptor(keyPath: \Flashcard.createdAt, ascending: false)],
+            predicate: NSPredicate(format: "deck == %@", deck)
+        )
+    }
+    
     var filteredCards: [Flashcard] {
-        let cards = deck.flashcards?.allObjects as? [Flashcard] ?? []
+        let cards = Array(flashcards)
         if searchText.isEmpty {
-            return cards.sorted { $0.createdAt ?? Date() > $1.createdAt ?? Date() }
+            return cards
         } else {
             return cards.filter { card in
                 card.question?.localizedCaseInsensitiveContains(searchText) ?? false ||
                 card.answer?.localizedCaseInsensitiveContains(searchText) ?? false
-            }.sorted { $0.createdAt ?? Date() > $1.createdAt ?? Date() }
+            }
         }
     }
     
@@ -183,12 +195,12 @@ struct DeckDetailView: View {
     }
     
     private func getReviewedCount() -> Int {
-        let cards = deck.flashcards?.allObjects as? [Flashcard] ?? []
+        let cards = Array(flashcards)
         return cards.filter { !($0.reviewSessions?.allObjects.isEmpty ?? true) }.count
     }
     
     private func getDueCount() -> Int {
-        let cards = deck.flashcards?.allObjects as? [Flashcard] ?? []
+        let cards = Array(flashcards)
         return cards.filter { card in
             let sessions = card.reviewSessions?.allObjects as? [ReviewSession] ?? []
             let lastSession = sessions.sorted { $0.reviewedAt ?? Date() < $1.reviewedAt ?? Date() }.last
