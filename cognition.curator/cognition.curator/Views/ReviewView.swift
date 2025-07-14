@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import CoreData
 
 struct ReviewView: View {
@@ -22,7 +23,7 @@ struct ReviewView: View {
                     reviewSessionView
                 }
             }
-            .background(Color(uiColor: .systemGroupedBackground))
+            .background(Color(uiColor: UIColor.systemGroupedBackground))
             .navigationTitle("Review")
             .navigationBarTitleDisplayMode(.large)
             .onAppear {
@@ -105,9 +106,9 @@ struct ReviewView: View {
                     .foregroundColor(.secondary)
             }
             
-            ProgressView(value: Double(currentCardIndex), total: Double(cardsToReview.count))
-                .progressViewStyle(LinearProgressViewStyle())
-                .scaleEffect(x: 1, y: 2, anchor: .center)
+//            ProgressView(value: Double(currentCardIndex), total: Double(cardsToReview.count))
+//                .progressViewStyle(.linear)
+//                .scaleEffect(x: 1, y: 2, anchor: .center)
         }
     }
     
@@ -116,7 +117,7 @@ struct ReviewView: View {
             // Card container
             ZStack {
                 RoundedRectangle(cornerRadius: 20)
-                    .fill(Color(uiColor: .systemBackground))
+                    .fill(Color(uiColor: UIColor.systemBackground))
                     .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
                 
                 VStack(spacing: 24) {
@@ -128,7 +129,7 @@ struct ReviewView: View {
                             .foregroundColor(.secondary)
                             .padding(.horizontal, 12)
                             .padding(.vertical, 6)
-                            .background(Color(uiColor: .systemGray6))
+                            .background(Color(uiColor: UIColor.systemGray6))
                             .clipShape(Capsule())
                         
                         Text(showingAnswer ? 
@@ -234,7 +235,7 @@ struct ReviewView: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(Color(uiColor: .systemGray5))
+                    .background(Color(uiColor: UIColor.systemGray5))
                     .foregroundColor(.primary)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
@@ -299,7 +300,7 @@ struct DifficultyButton: View {
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 16)
-            .background(Color(uiColor: .systemBackground))
+            .background(Color(uiColor: UIColor.systemBackground))
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
         }

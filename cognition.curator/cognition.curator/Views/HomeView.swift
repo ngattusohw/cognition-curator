@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import CoreData
 
 struct HomeView: View {
@@ -35,7 +36,7 @@ struct HomeView: View {
                 .padding(.horizontal, 20)
                 .padding(.top, 20)
             }
-            .background(Color(uiColor: .systemGroupedBackground))
+            .background(Color(uiColor: UIColor.systemGroupedBackground))
             .navigationTitle("Cognition Curator")
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
@@ -186,7 +187,7 @@ struct HomeView: View {
             }
         }
         .padding(20)
-        .background(Color(uiColor: .systemBackground))
+        .background(Color(uiColor: UIColor.systemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
     }
@@ -296,7 +297,7 @@ struct StatCard: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 16)
-        .background(Color(uiColor: .systemBackground))
+        .background(Color(uiColor: UIColor.systemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
     }
@@ -322,7 +323,7 @@ struct QuickActionButton: View {
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 16)
-            .background(Color(uiColor: .systemBackground))
+            .background(Color(uiColor: UIColor.systemBackground))
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
         }

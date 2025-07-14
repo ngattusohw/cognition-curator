@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import CoreData
 
 struct DeckDetailView: View {
@@ -31,7 +32,7 @@ struct DeckDetailView: View {
             // Cards list
             cardsList
         }
-        .background(Color(uiColor: .systemGroupedBackground))
+        .background(Color(uiColor: UIColor.systemGroupedBackground))
         .navigationTitle(deck.name ?? "Deck")
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
@@ -100,12 +101,12 @@ struct DeckDetailView: View {
             }
             
             // Progress bar
-            ProgressView(value: getProgressValue())
-                .progressViewStyle(LinearProgressViewStyle())
-                .scaleEffect(x: 1, y: 2, anchor: .center)
+//            ProgressView(value: getProgressValue())
+//                .progressViewStyle(.linear)
+//                .scaleEffect(x: 1, y: 2, anchor: .center)
         }
         .padding(20)
-        .background(Color(uiColor: .systemBackground))
+        .background(Color(uiColor: UIColor.systemBackground))
         .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
     }
     
@@ -126,7 +127,7 @@ struct DeckDetailView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
-        .background(Color(uiColor: .systemBackground))
+        .background(Color(uiColor: UIColor.systemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
         .padding(.horizontal, 20)
@@ -291,7 +292,7 @@ struct CardRowView: View {
             }
         }
         .padding(16)
-        .background(Color(uiColor: .systemBackground))
+        .background(Color(uiColor: UIColor.systemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
     }

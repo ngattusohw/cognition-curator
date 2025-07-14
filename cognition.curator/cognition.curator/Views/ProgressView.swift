@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import CoreData
 
 struct ProgressView: View {
@@ -28,7 +29,7 @@ struct ProgressView: View {
                 .padding(.horizontal, 20)
                 .padding(.top, 20)
             }
-            .background(Color(uiColor: .systemGroupedBackground))
+            .background(Color(uiColor: UIColor.systemGroupedBackground))
             .navigationTitle("Progress")
             .navigationBarTitleDisplayMode(.large)
             .onAppear {
@@ -117,13 +118,13 @@ struct ProgressView: View {
             HStack(spacing: 8) {
                 ForEach(0..<7, id: \.self) { day in
                     Circle()
-                        .fill(day < min(currentStreak, 7) ? Color.orange : Color(uiColor: .systemGray5))
+                        .fill(day < min(currentStreak, 7) ? Color.orange : Color(uiColor: UIColor.systemGray5))
                         .frame(width: 12, height: 12)
                 }
             }
         }
         .padding(20)
-        .background(Color(uiColor: .systemBackground))
+        .background(Color(uiColor: UIColor.systemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
     }
@@ -211,7 +212,7 @@ struct StatOverviewCard: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(16)
-        .background(Color(uiColor: .systemBackground))
+        .background(Color(uiColor: UIColor.systemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
     }
@@ -240,7 +241,7 @@ struct DailyActivityChart: View {
             .frame(height: 100)
         }
         .padding(20)
-        .background(Color(uiColor: .systemBackground))
+        .background(Color(uiColor: UIColor.systemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
     }
@@ -269,7 +270,7 @@ struct AccuracyTrendChart: View {
             .frame(height: 100)
         }
         .padding(20)
-        .background(Color(uiColor: .systemBackground))
+        .background(Color(uiColor: UIColor.systemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
     }
@@ -311,7 +312,7 @@ struct ActivityRowView: View {
             }
         }
         .padding(12)
-        .background(Color(uiColor: .systemBackground))
+        .background(Color(uiColor: UIColor.systemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
     }

@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import CoreData
 
 struct DeckRowView: View {
@@ -52,7 +53,7 @@ struct DeckRowView: View {
                 .foregroundColor(.secondary)
         }
         .padding(16)
-        .background(Color(uiColor: .systemBackground))
+        .background(Color(uiColor: UIColor.systemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
         .onAppear {
