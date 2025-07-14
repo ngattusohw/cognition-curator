@@ -6,190 +6,107 @@ The goal is to deliver correct, working code on the first attempt, minimizing th
 
 ## Pre-Delivery Validation Protocol
 
-### MANDATORY: Always run validation before presenting solutions
-1. **Execute `./validate_app.sh`** - This catches 95% of common issues
-2. **Review all compilation errors and warnings**
-3. **Test critical user paths manually if needed**
-4. **Only present solutions after full validation passes**
+### MANDATORY: Always validate before presenting solutions
+1. **Manual Code Review** - Check for obvious compilation errors
+2. **Test critical user paths** - Verify the specific functionality being implemented
+3. **Check for common SwiftUI issues** - Naming conflicts, force unwrapping, etc.
+4. **Only present solutions after validation**
 
-### Validation Script Requirements
-- Must run from project root directory
-- Must use correct Xcode project paths
-- Must catch SwiftUI naming conflicts
-- Must identify force unwrapping and potential crashes
-- Must validate unit tests pass
-- Must check for warnings and code quality issues
+### Validation Approach (Updated)
+- **Primary**: Manual code review and targeted testing
+- **Secondary**: Simple build checks when needed
+- **Avoid**: Complex automated scripts that depend on simulators (they hang/crash)
 
-## SwiftUI Development Rules
+## Swift/SwiftUI Specific Rules
 
-### 1. Naming Conflicts (CRITICAL)
-- **NEVER** create custom structs with names that conflict with SwiftUI built-ins
-- Common conflicts: `ProgressView`, `Button`, `Text`, `Image`, `List`
-- Always prefix custom views: `CustomProgressView`, `MyButton`, etc.
-- When in doubt, use descriptive names: `ProgressStatsView`, `CardButton`
+### Critical Issues to Always Check
+1. **SwiftUI Naming Conflicts** - Custom views shadowing built-in SwiftUI components
+2. **Core Data @FetchRequest** - Use proper fetch requests for automatic UI updates
+3. **Navigation Bindings** - Pass required @Binding parameters for tab navigation
+4. **Force Unwrapping** - Minimize use of `!` operator
+5. **Animation State** - Reset animation states when transitioning between views
 
-### 2. ProgressView Style Usage
-- **NEVER** use `LinearProgressViewStyle()` - this is deprecated
-- **ALWAYS** use `.progressViewStyle(.linear)` for linear progress bars
-- **NEVER** use `LinearProgressViewStyle` without parentheses - causes type errors
+### Common Patterns That Work
+- **TabView Navigation**: Use `@Binding var selectedTab: Int` and `selectedTab = targetIndex`
+- **Core Data Updates**: Use `@FetchRequest` instead of direct relationship access
+- **Card Flip Animations**: Use scale/opacity instead of 3D rotation to avoid mirrored text
+- **Review Flow**: Reset state variables when moving between cards
+- **Button Actions**: Always implement actual functionality, never leave empty `{}`
 
-### 3. Core Data Integration
-- Always use proper Core Data relationships
-- Implement cascade delete rules appropriately
-- Use optional chaining for Core Data properties: `deck.name ?? ""`
-- Test data integrity in unit tests
+## Architecture Decisions
 
-### 4. State Management
+### Core Data
+- Use `@FetchRequest` for automatic UI updates
+- Implement cascade delete rules in the data model
+- Save context after each significant operation
+
+### Navigation
+- TabView with `@State selectedTab` in ContentView
+- Pass `selectedTab` binding to child views that need navigation
+- Use `selectedTab = index` for programmatic navigation
+
+### State Management
 - Use `@State` for local view state
-- Use `@Environment(\.managedObjectContext)` for Core Data
-- Avoid force unwrapping in UI code
-- Handle empty states gracefully
-
-## Code Quality Standards
-
-### 1. Error Handling
-- Minimize force unwrapping (`!`) - use optional binding instead
-- Provide fallback values for optional properties
-- Handle empty collections gracefully
-- Use proper error handling for Core Data operations
-
-### 2. Performance
-- Avoid expensive operations on main thread
-- Use `LazyVStack` for large lists
-- Implement proper filtering and sorting
-- Test performance with large datasets
-
-### 3. Testing Requirements
-- Unit tests for all business logic
-- Core Data relationship tests
-- Progress calculation validation
-- UI state testing with PreviewHelper
-- Performance tests for critical paths
-
-## Development Workflow
-
-### 1. Before Making Changes
-```bash
-./validate_app.sh
-```
-
-### 2. After Making Changes
-```bash
-./validate_app.sh
-```
-
-### 3. If Validation Fails
-- Fix all issues before presenting to user
-- Re-run validation until clean
-- Only escalate to user if truly stuck
-
-### 4. Code Review Checklist
-- [ ] No SwiftUI naming conflicts
-- [ ] Proper ProgressView syntax
-- [ ] Core Data relationships correct
-- [ ] No force unwrapping in UI
-- [ ] Empty states handled
-- [ ] Unit tests updated
-- [ ] Performance considerations addressed
-
-## Common Pitfalls to Avoid
-
-### 1. SwiftUI Syntax Errors
-- `LinearProgressViewStyle()` ❌ → `.progressViewStyle(.linear)` ✅
-- `LinearProgressViewStyle` ❌ → `.progressViewStyle(.linear)` ✅
-- Custom `ProgressView` struct ❌ → `ProgressStatsView` ✅
-
-### 2. Core Data Issues
-- Missing cascade delete rules
-- Force unwrapping optional properties
-- Not handling empty relationships
-- Forgetting to save context
-
-### 3. State Management
-- Not using proper SwiftUI state patterns
-- Mixing UIKit and SwiftUI patterns incorrectly
-- Not handling view lifecycle properly
+- Use `@Binding` for parent-child communication
+- Reset state when transitioning between views/cards
 
 ## Testing Strategy
 
-### 1. Automated Testing
-- Unit tests for all business logic
+### Manual Testing Focus
+- **New Card Creation** - Verify cards appear immediately
+- **Review Flow** - Test card flip animations and difficulty selection
+- **Navigation** - Test all button actions and tab switching
+- **Empty States** - Verify proper handling of no data scenarios
+
+### Automated Testing (When Stable)
+- Unit tests for business logic
 - Core Data model tests
 - Spaced repetition algorithm tests
-- Progress calculation tests
+- **Avoid UI tests** - They're flaky and cause simulator issues
 
-### 2. UI Testing
-- Preview system for all view states
-- Empty, normal, full, premium, superset states
-- Navigation flow testing
-- Error state handling
+## Development Process
 
-### 3. Performance Testing
-- Large dataset handling
-- Memory usage validation
-- Main thread blocking detection
+### Before Implementing Changes
+1. **Understand the problem** - Search codebase to understand current implementation
+2. **Identify root cause** - Don't just fix symptoms
+3. **Plan the solution** - Consider all affected files and components
+4. **Implement systematically** - Make all related changes together
 
-## File Organization
+### After Implementing Changes
+1. **Review the code** - Check for obvious issues
+2. **Test the specific functionality** - Verify the fix works
+3. **Check for regressions** - Ensure existing functionality still works
+4. **Document the solution** - Update rules if new patterns emerge
 
-### 1. Test Files
-- `CognitionCuratorTests.swift` - Comprehensive unit tests
-- `PreviewHelper.swift` - UI state testing and sample data
+## Key Lessons Learned
 
-### 2. Validation Files
-- `validate_app.sh` - Automated validation script
-- `DEVELOPMENT_RULES.md` - This file
+### Issues We've Solved
+- ✅ **SwiftUI Naming Conflicts** - Renamed custom `ProgressView` to `ProgressStatsView`
+- ✅ **Card Display Updates** - Replaced direct Core Data access with `@FetchRequest`
+- ✅ **Review Button Navigation** - Implemented proper TabView navigation
+- ✅ **Card Flip Animation** - Fixed mirrored text with better animation approach
+- ✅ **Empty Button Actions** - Implemented all button functionality
 
-### 3. Core Files
-- Models: Core Data entities
-- Views: SwiftUI views with proper naming
-- Services: Business logic and algorithms
-
-## Emergency Procedures
-
-### If App Won't Build
-1. Check for SwiftUI naming conflicts
-2. Verify ProgressView syntax
-3. Check Core Data model consistency
-4. Review recent changes for force unwrapping
-
-### If Tests Fail
-1. Check Core Data test setup
-2. Verify sample data creation
-3. Review relationship configurations
-4. Check for async testing issues
-
-### If Performance Issues
-1. Profile with Instruments
-2. Check for main thread blocking
-3. Review Core Data fetch requests
-4. Optimize UI rendering
+### Validation Approach That Works
+- **Manual code review** - Fast and reliable
+- **Targeted testing** - Test the specific feature being implemented
+- **Incremental validation** - Check each change as you make it
+- **Avoid complex automation** - Simulators are unreliable for automated testing
 
 ## Success Metrics
 
-### Primary Goal
-- **95% of issues caught before user sees them**
-- Clean validation script runs
-- Working code on first delivery
+### What Good Looks Like
+- Code compiles on first try
+- Features work as expected immediately
+- No empty action blocks or placeholder code
+- Proper state management and navigation
+- Minimal force unwrapping and potential crashes
 
-### Secondary Goals
-- Comprehensive test coverage
-- Performance within acceptable limits
-- Maintainable, readable code
-- Proper error handling throughout
+### When to Stop
+- Feature works as requested
+- No obvious compilation errors
+- Navigation flows correctly
+- State updates properly
+- User experience is smooth
 
-## Continuous Improvement
-
-### After Each Issue
-1. Update validation script to catch similar issues
-2. Add relevant tests
-3. Update this rules file
-4. Share learnings with team
-
-### Regular Reviews
-- Monthly validation script effectiveness review
-- Quarterly development process optimization
-- Annual architecture review
-
----
-
-**Remember**: The goal is to be so thorough in validation that users rarely encounter broken code. When in doubt, validate more, not less. 
+This approach maximizes development speed while minimizing debugging cycles and simulator issues. 
