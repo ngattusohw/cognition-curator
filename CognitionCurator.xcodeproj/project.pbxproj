@@ -1,0 +1,440 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		1A2B3C4D5E6F7890 /* CognitionCuratorApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7891 /* CognitionCuratorApp.swift */; };
+		1A2B3C4D5E6F7892 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7893 /* ContentView.swift */; };
+		1A2B3C4D5E6F7894 /* PersistenceController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7895 /* PersistenceController.swift */; };
+		1A2B3C4D5E6F7896 /* CognitionCurator.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7897 /* CognitionCurator.xcdatamodeld */; };
+		1A2B3C4D5E6F7898 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7899 /* HomeView.swift */; };
+		1A2B3C4D5E6F789A /* DecksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F789B /* DecksView.swift */; };
+		1A2B3C4D5E6F789C /* ReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F789D /* ReviewView.swift */; };
+		1A2B3C4D5E6F789E /* ProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F789F /* ProgressView.swift */; };
+		1A2B3C4D5E6F78A0 /* CreateDeckView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F78A1 /* CreateDeckView.swift */; };
+		1A2B3C4D5E6F78A2 /* AddCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F78A3 /* AddCardView.swift */; };
+		1A2B3C4D5E6F78A4 /* EditDeckView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F78A5 /* EditDeckView.swift */; };
+		1A2B3C4D5E6F78A6 /* DeckDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F78A7 /* DeckDetailView.swift */; };
+		1A2B3C4D5E6F78A8 /* DeckRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F78A9 /* DeckRow.swift */; };
+		1A2B3C4D5E6F78AA /* FlashcardAPIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F78AB /* FlashcardAPIService.swift */; };
+		1A2B3C4D5E6F78AC /* SpacedRepetitionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F78AD /* SpacedRepetitionService.swift */; };
+		1A2B3C4D5E6F78AE /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F78AF /* Assets.xcassets */; };
+		1A2B3C4D5E6F78B0 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F78B1 /* Preview Assets.xcassets */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		1A2B3C4D5E6F7890 /* CognitionCurator.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CognitionCurator.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		1A2B3C4D5E6F7891 /* CognitionCuratorApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CognitionCuratorApp.swift; sourceTree = "<group>"; };
+		1A2B3C4D5E6F7893 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		1A2B3C4D5E6F7895 /* PersistenceController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistenceController.swift; sourceTree = "<group>"; };
+		1A2B3C4D5E6F7897 /* CognitionCurator.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = CognitionCurator.xcdatamodel; sourceTree = "<group>"; };
+		1A2B3C4D5E6F7899 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		1A2B3C4D5E6F789B /* DecksView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DecksView.swift; sourceTree = "<group>"; };
+		1A2B3C4D5E6F789D /* ReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewView.swift; sourceTree = "<group>"; };
+		1A2B3C4D5E6F789F /* ProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressView.swift; sourceTree = "<group>"; };
+		1A2B3C4D5E6F78A1 /* CreateDeckView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateDeckView.swift; sourceTree = "<group>"; };
+		1A2B3C4D5E6F78A3 /* AddCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddCardView.swift; sourceTree = "<group>"; };
+		1A2B3C4D5E6F78A5 /* EditDeckView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditDeckView.swift; sourceTree = "<group>"; };
+		1A2B3C4D5E6F78A7 /* DeckDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeckDetailView.swift; sourceTree = "<group>"; };
+		1A2B3C4D5E6F78A9 /* DeckRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeckRow.swift; sourceTree = "<group>"; };
+		1A2B3C4D5E6F78AB /* FlashcardAPIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlashcardAPIService.swift; sourceTree = "<group>"; };
+		1A2B3C4D5E6F78AD /* SpacedRepetitionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpacedRepetitionService.swift; sourceTree = "<group>"; };
+		1A2B3C4D5E6F78AF /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		1A2B3C4D5E6F78B1 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		1A2B3C4D5E6F78B2 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		1A2B3C4D5E6F788D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		1A2B3C4D5E6F7887 = {
+			isa = PBXGroup;
+			children = (
+				1A2B3C4D5E6F7892 /* CognitionCurator */,
+				1A2B3C4D5E6F7891 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		1A2B3C4D5E6F7891 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				1A2B3C4D5E6F7890 /* CognitionCurator.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		1A2B3C4D5E6F7892 /* CognitionCurator */ = {
+			isa = PBXGroup;
+			children = (
+				1A2B3C4D5E6F7891 /* CognitionCuratorApp.swift */,
+				1A2B3C4D5E6F78B3 /* Views */,
+				1A2B3C4D5E6F78B4 /* Services */,
+				1A2B3C4D5E6F78B5 /* Models */,
+				1A2B3C4D5E6F78AF /* Assets.xcassets */,
+				1A2B3C4D5E6F78B2 /* Info.plist */,
+				1A2B3C4D5E6F78B6 /* Preview Content */,
+			);
+			path = CognitionCurator;
+			sourceTree = "<group>";
+		};
+		1A2B3C4D5E6F78B3 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				1A2B3C4D5E6F7893 /* ContentView.swift */,
+				1A2B3C4D5E6F7899 /* HomeView.swift */,
+				1A2B3C4D5E6F789B /* DecksView.swift */,
+				1A2B3C4D5E6F789D /* ReviewView.swift */,
+				1A2B3C4D5E6F789F /* ProgressView.swift */,
+				1A2B3C4D5E6F78A1 /* CreateDeckView.swift */,
+				1A2B3C4D5E6F78A3 /* AddCardView.swift */,
+				1A2B3C4D5E6F78A5 /* EditDeckView.swift */,
+				1A2B3C4D5E6F78A7 /* DeckDetailView.swift */,
+				1A2B3C4D5E6F78A9 /* DeckRow.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		1A2B3C4D5E6F78B4 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				1A2B3C4D5E6F7895 /* PersistenceController.swift */,
+				1A2B3C4D5E6F78AB /* FlashcardAPIService.swift */,
+				1A2B3C4D5E6F78AD /* SpacedRepetitionService.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		1A2B3C4D5E6F78B5 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				1A2B3C4D5E6F7897 /* CognitionCurator.xcdatamodeld */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		1A2B3C4D5E6F78B6 /* Preview Content */ = {
+			isa = PBXGroup;
+			children = (
+				1A2B3C4D5E6F78B1 /* Preview Assets.xcassets */,
+			);
+			path = "Preview Content";
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		1A2B3C4D5E6F788F /* CognitionCurator */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1A2B3C4D5E6F78B5 /* Build configuration list for PBXNativeTarget "CognitionCurator" */;
+			buildPhases = (
+				1A2B3C4D5E6F788C /* Sources */,
+				1A2B3C4D5E6F788D /* Frameworks */,
+				1A2B3C4D5E6F788E /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = CognitionCurator;
+			productName = CognitionCurator;
+			productReference = 1A2B3C4D5E6F7890 /* CognitionCurator.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		1A2B3C4D5E6F7888 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1500;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					1A2B3C4D5E6F788F = {
+						CreatedOnToolsVersion = 15.0;
+					};
+				};
+			};
+			buildConfigurationList = 1A2B3C4D5E6F788B /* Build configuration list for PBXProject "CognitionCurator" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 1A2B3C4D5E6F7887;
+			productRefGroup = 1A2B3C4D5E6F7891 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				1A2B3C4D5E6F788F /* CognitionCurator */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		1A2B3C4D5E6F788E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1A2B3C4D5E6F78B0 /* Preview Assets.xcassets in Resources */,
+				1A2B3C4D5E6F78AE /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		1A2B3C4D5E6F788C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1A2B3C4D5E6F7892 /* ContentView.swift in Sources */,
+				1A2B3C4D5E6F7890 /* CognitionCuratorApp.swift in Sources */,
+				1A2B3C4D5E6F7894 /* PersistenceController.swift in Sources */,
+				1A2B3C4D5E6F7896 /* CognitionCurator.xcdatamodeld in Sources */,
+				1A2B3C4D5E6F7898 /* HomeView.swift in Sources */,
+				1A2B3C4D5E6F789A /* DecksView.swift in Sources */,
+				1A2B3C4D5E6F789C /* ReviewView.swift in Sources */,
+				1A2B3C4D5E6F789E /* ProgressView.swift in Sources */,
+				1A2B3C4D5E6F78A0 /* CreateDeckView.swift in Sources */,
+				1A2B3C4D5E6F78A2 /* AddCardView.swift in Sources */,
+				1A2B3C4D5E6F78A4 /* EditDeckView.swift in Sources */,
+				1A2B3C4D5E6F78A6 /* DeckDetailView.swift in Sources */,
+				1A2B3C4D5E6F78A8 /* DeckRow.swift in Sources */,
+				1A2B3C4D5E6F78AA /* FlashcardAPIService.swift in Sources */,
+				1A2B3C4D5E6F78AC /* SpacedRepetitionService.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		1A2B3C4D5E6F78B3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		1A2B3C4D5E6F78B4 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		1A2B3C4D5E6F78B6 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"CognitionCurator/Preview Content\"";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = CognitionCurator/Info.plist;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.cognitioncurator.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		1A2B3C4D5E6F78B7 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"CognitionCurator/Preview Content\"";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = CognitionCurator/Info.plist;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.cognitioncurator.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		1A2B3C4D5E6F788B /* Build configuration list for PBXProject "CognitionCurator" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1A2B3C4D5E6F78B3 /* Debug */,
+				1A2B3C4D5E6F78B4 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		1A2B3C4D5E6F78B5 /* Build configuration list for PBXNativeTarget "CognitionCurator" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1A2B3C4D5E6F78B6 /* Debug */,
+				1A2B3C4D5E6F78B7 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCVersionGroup section */
+		1A2B3C4D5E6F7897 /* CognitionCurator.xcdatamodeld */ = {
+			isa = XCVersionGroup;
+			children = (
+				1A2B3C4D5E6F7897 /* CognitionCurator.xcdatamodel */,
+			);
+			currentVersion = 1A2B3C4D5E6F7897 /* CognitionCurator.xcdatamodel */;
+			path = CognitionCurator.xcdatamodeld;
+			sourceTree = "<group>";
+			versionGroupType = wrapper.xcdatamodel;
+		};
+/* End XCVersionGroup section */
+	};
+	rootObject = 1A2B3C4D5E6F7888 /* Project object */;
+} 
