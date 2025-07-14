@@ -27,7 +27,7 @@ struct ContentView: View {
                 }
                 .tag(1)
             
-            ReviewView(forceReview: $forceReview)
+            ReviewView(forceReview: $forceReview, selectedTab: $selectedTab)
                 .tabItem {
                     Image(systemName: "brain.head.profile")
                     Text("Review")

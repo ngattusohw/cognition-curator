@@ -5,6 +5,7 @@ import CoreData
 struct ReviewView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @Binding var forceReview: Bool
+    @Binding var selectedTab: Int
     
     @State private var cardsToReview: [Flashcard] = []
     @State private var currentCardIndex = 0
@@ -255,6 +256,7 @@ struct ReviewView: View {
                 
                 Button(action: {
                     // Go back to home
+                    selectedTab = 0 // Navigate to the home tab
                 }) {
                     HStack {
                         Image(systemName: "house.fill")
@@ -355,6 +357,6 @@ struct DifficultyButton: View {
 }
 
 #Preview {
-    ReviewView(forceReview: .constant(false))
+    ReviewView(forceReview: .constant(false), selectedTab: .constant(0))
         .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
 } 

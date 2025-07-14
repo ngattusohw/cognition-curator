@@ -116,7 +116,7 @@ extension ReviewView {
         VStack {
             Text("Review View - All States")
                 .font(.title)
-            ReviewView(forceReview: .constant(false))
+            ReviewView(forceReview: .constant(false), selectedTab: .constant(0))
         }
         .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
     }
