@@ -146,27 +146,48 @@ struct ReviewView: View {
                             .fontWeight(.medium)
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, 20)
+                            .opacity(isFlipping ? 0 : 1)
+                            .animation(.easeInOut(duration: 0.2), value: isFlipping)
                     }
                     
-                    // Tap to reveal hint
-                    if !showingAnswer {
-                        Text("Tap to reveal answer")
+                    // Tap instruction
+                    VStack(spacing: 8) {
+                        if !showingAnswer {
+                            Text("Tap to reveal answer")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        } else {
+                            Text("Tap to show question again")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        
+                        // Visual indicator
+                        Image(systemName: showingAnswer ? "arrow.counterclockwise" : "eye")
                             .font(.caption)
                             .foregroundColor(.secondary)
-                            .padding(.top, 20)
+                            .opacity(0.6)
                     }
+                    .padding(.top, 20)
                 }
                 .padding(40)
             }
             .frame(height: 300)
-            .rotation3DEffect(
-                .degrees(showingAnswer ? 180 : 0),
-                axis: (x: 0, y: 1, z: 0)
-            )
+            .scaleEffect(isFlipping ? 0.95 : 1.0)
+            .animation(.easeInOut(duration: 0.3), value: isFlipping)
             .onTapGesture {
-                if !showingAnswer && !isFlipping {
-                    withAnimation(.easeInOut(duration: 0.6)) {
-                        showingAnswer = true
+                if !isFlipping {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        isFlipping = true
+                    }
+                    
+                    // Flip the content after a short delay
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                        showingAnswer.toggle()
+                        
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            isFlipping = false
+                        }
                     }
                 }
             }
@@ -276,6 +297,7 @@ struct ReviewView: View {
         cardsReviewed += 1
         currentCardIndex += 1
         showingAnswer = false
+        isFlipping = false
         
         // Add haptic feedback
         let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
