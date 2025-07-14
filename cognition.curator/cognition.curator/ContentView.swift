@@ -9,16 +9,36 @@ import SwiftUI
 
 struct ContentView: View {
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        TabView {
+            HomeView()
+                .tabItem {
+                    Image(systemName: "house.fill")
+                    Text("Home")
+                }
+            
+            DecksView()
+                .tabItem {
+                    Image(systemName: "rectangle.stack.fill")
+                    Text("Decks")
+                }
+            
+            ReviewView()
+                .tabItem {
+                    Image(systemName: "brain.head.profile")
+                    Text("Review")
+                }
+            
+            ProgressView()
+                .tabItem {
+                    Image(systemName: "chart.line.uptrend.xyaxis")
+                    Text("Progress")
+                }
         }
-        .padding()
+        .accentColor(.blue)
     }
 }
 
 #Preview {
     ContentView()
+        .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
 }
