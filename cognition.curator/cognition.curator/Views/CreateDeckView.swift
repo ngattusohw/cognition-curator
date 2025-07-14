@@ -35,7 +35,7 @@ struct CreateDeckView: View {
                 .padding(.horizontal, 20)
                 .padding(.top, 20)
             }
-            .background(Color(.systemGroupedBackground))
+            .background(Color(uiColor: .systemGroupedBackground))
             .navigationTitle("Create Deck")
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
@@ -113,7 +113,7 @@ struct CreateDeckView: View {
             .toggleStyle(SwitchToggleStyle(tint: .blue))
         }
         .padding(20)
-        .background(Color(.systemBackground))
+        .background(Color(uiColor: .systemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
     }
@@ -160,7 +160,7 @@ struct CreateDeckView: View {
             }
         }
         .padding(20)
-        .background(Color(.systemBackground))
+        .background(Color(uiColor: .systemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
         .sheet(isPresented: $showingAIGeneration) {
@@ -202,7 +202,7 @@ struct CreateDeckView: View {
             }
         }
         .padding(20)
-        .background(Color(.systemBackground))
+        .background(Color(uiColor: .systemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
     }
@@ -391,7 +391,7 @@ struct GeneratedCardRow: View {
                 .foregroundColor(.secondary)
         }
         .padding(12)
-        .background(Color(.systemBackground))
+        .background(Color(uiColor: .systemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 8))
         .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
     }

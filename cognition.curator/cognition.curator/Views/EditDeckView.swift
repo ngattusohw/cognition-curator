@@ -30,7 +30,7 @@ struct EditDeckView: View {
             }
             .padding(.horizontal, 20)
             .padding(.top, 20)
-            .background(Color(.systemGroupedBackground))
+            .background(Color(uiColor: .systemGroupedBackground))
             .navigationTitle("Edit Deck")
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
@@ -104,7 +104,7 @@ struct EditDeckView: View {
             .toggleStyle(SwitchToggleStyle(tint: .blue))
         }
         .padding(20)
-        .background(Color(.systemBackground))
+        .background(Color(uiColor: .systemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
     }

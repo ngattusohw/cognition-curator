@@ -1,0 +1,161 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project cognition.curator.xcodeproj -scheme cognition.curator -destination "platform=iOS Simulator,name=iPhone 16" build
+
+ComputePackagePrebuildTargetDependencyGraph
+
+Prepare packages
+
+CreateBuildRequest
+
+SendProjectDescription
+
+CreateBuildOperation
+
+ComputeTargetDependencyGraph
+note: Building targets in dependency order
+note: Target dependency graph (1 target)
+    Target 'cognition.curator' in project 'cognition.curator' (no dependencies)
+
+GatherProvisioningInputs
+
+CreateBuildDescription
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -v -E -dM -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.4.sdk -x c -c /dev/null
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/usr/bin/momc --dry-run --action generate --swift-version 5.0 --sdkroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.4.sdk --iphonesimulator-deployment-target 18.4 --module cognition_curator /Users/ngattuso/dev/collect/cognition_curator/cognition.curator/cognition.curator/CognitionCurator.xcdatamodeld /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Intermediates.noindex/cognition.curator.build/Debug-iphonesimulator/cognition.curator.build/DerivedSources/CoreDataGenerated/CognitionCurator
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/usr/bin/actool --print-asset-tag-combinations --output-format xml1 /Users/ngattuso/dev/collect/cognition_curator/cognition.curator/cognition.curator/Assets.xcassets
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/usr/bin/actool --version --output-format xml1
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc --version
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld -version_details
+
+Build description signature: 93088be04cb629f6d905a8f24a86fe5e
+Build description path: /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Intermediates.noindex/XCBuildData/93088be04cb629f6d905a8f24a86fe5e.xcbuilddata
+ClangStatCache /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.4.sdk /Users/ngattuso/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/iphonesimulator18.4-22E235-71825a6d136aa4733edcbe86ece5525b.sdkstatcache
+    cd /Users/ngattuso/dev/collect/cognition_curator/cognition.curator/cognition.curator.xcodeproj
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.4.sdk -o /Users/ngattuso/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/iphonesimulator18.4-22E235-71825a6d136aa4733edcbe86ece5525b.sdkstatcache
+
+CreateBuildDirectory /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Products/Debug-iphonesimulator
+    cd /Users/ngattuso/dev/collect/cognition_curator/cognition.curator/cognition.curator.xcodeproj
+    builtin-create-build-directory /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Products/Debug-iphonesimulator
+
+CreateBuildDirectory /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator
+    cd /Users/ngattuso/dev/collect/cognition_curator/cognition.curator/cognition.curator.xcodeproj
+    builtin-create-build-directory /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator
+
+WriteAuxiliaryFile /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Intermediates.noindex/cognition.curator.build/Debug-iphonesimulator/cognition.curator-d77073b25045a30b7a4cdda5dfe25a81-VFS-iphonesimulator/all-product-headers.yaml
+    cd /Users/ngattuso/dev/collect/cognition_curator/cognition.curator/cognition.curator.xcodeproj
+    write-file /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Intermediates.noindex/cognition.curator.build/Debug-iphonesimulator/cognition.curator-d77073b25045a30b7a4cdda5dfe25a81-VFS-iphonesimulator/all-product-headers.yaml
+
+WriteAuxiliaryFile /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Intermediates.noindex/cognition.curator.build/Debug-iphonesimulator/cognition.curator.build/cognition.curator.DependencyStaticMetadataFileList (in target 'cognition.curator' from project 'cognition.curator')
+    cd /Users/ngattuso/dev/collect/cognition_curator/cognition.curator
+    write-file /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Intermediates.noindex/cognition.curator.build/Debug-iphonesimulator/cognition.curator.build/cognition.curator.DependencyStaticMetadataFileList
+
+WriteAuxiliaryFile /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Intermediates.noindex/cognition.curator.build/Debug-iphonesimulator/cognition.curator.build/cognition.curator-generated-files.hmap (in target 'cognition.curator' from project 'cognition.curator')
+    cd /Users/ngattuso/dev/collect/cognition_curator/cognition.curator
+    write-file /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Intermediates.noindex/cognition.curator.build/Debug-iphonesimulator/cognition.curator.build/cognition.curator-generated-files.hmap
+
+WriteAuxiliaryFile /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Intermediates.noindex/cognition.curator.build/Debug-iphonesimulator/cognition.curator.build/cognition.curator-all-non-framework-target-headers.hmap (in target 'cognition.curator' from project 'cognition.curator')
+    cd /Users/ngattuso/dev/collect/cognition_curator/cognition.curator
+    write-file /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Intermediates.noindex/cognition.curator.build/Debug-iphonesimulator/cognition.curator.build/cognition.curator-all-non-framework-target-headers.hmap
+
+WriteAuxiliaryFile /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Intermediates.noindex/cognition.curator.build/Debug-iphonesimulator/cognition.curator.build/empty-cognition.curator.plist (in target 'cognition.curator' from project 'cognition.curator')
+    cd /Users/ngattuso/dev/collect/cognition_curator/cognition.curator
+    write-file /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Intermediates.noindex/cognition.curator.build/Debug-iphonesimulator/cognition.curator.build/empty-cognition.curator.plist
+
+WriteAuxiliaryFile /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Intermediates.noindex/cognition.curator.build/Debug-iphonesimulator/cognition.curator.build/cognition.curator-DebugDylibPath-normal-arm64.txt (in target 'cognition.curator' from project 'cognition.curator')
+    cd /Users/ngattuso/dev/collect/cognition_curator/cognition.curator
+    write-file /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Intermediates.noindex/cognition.curator.build/Debug-iphonesimulator/cognition.curator.build/cognition.curator-DebugDylibPath-normal-arm64.txt
+
+WriteAuxiliaryFile /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Intermediates.noindex/cognition.curator.build/Debug-iphonesimulator/cognition.curator.build/cognition.curator.hmap (in target 'cognition.curator' from project 'cognition.curator')
+    cd /Users/ngattuso/dev/collect/cognition_curator/cognition.curator
+    write-file /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Intermediates.noindex/cognition.curator.build/Debug-iphonesimulator/cognition.curator.build/cognition.curator.hmap
+
+WriteAuxiliaryFile /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Intermediates.noindex/cognition.curator.build/Debug-iphonesimulator/cognition.curator.build/cognition.curator-own-target-headers.hmap (in target 'cognition.curator' from project 'cognition.curator')
+    cd /Users/ngattuso/dev/collect/cognition_curator/cognition.curator
+    write-file /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Intermediates.noindex/cognition.curator.build/Debug-iphonesimulator/cognition.curator.build/cognition.curator-own-target-headers.hmap
+
+WriteAuxiliaryFile /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Intermediates.noindex/cognition.curator.build/Debug-iphonesimulator/cognition.curator.build/cognition.curator.DependencyMetadataFileList (in target 'cognition.curator' from project 'cognition.curator')
+    cd /Users/ngattuso/dev/collect/cognition_curator/cognition.curator
+    write-file /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Intermediates.noindex/cognition.curator.build/Debug-iphonesimulator/cognition.curator.build/cognition.curator.DependencyMetadataFileList
+
+WriteAuxiliaryFile /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Intermediates.noindex/cognition.curator.build/Debug-iphonesimulator/cognition.curator.build/cognition.curator-project-headers.hmap (in target 'cognition.curator' from project 'cognition.curator')
+    cd /Users/ngattuso/dev/collect/cognition_curator/cognition.curator
+    write-file /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Intermediates.noindex/cognition.curator.build/Debug-iphonesimulator/cognition.curator.build/cognition.curator-project-headers.hmap
+
+WriteAuxiliaryFile /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Intermediates.noindex/cognition.curator.build/Debug-iphonesimulator/cognition.curator.build/cognition.curator-all-target-headers.hmap (in target 'cognition.curator' from project 'cognition.curator')
+    cd /Users/ngattuso/dev/collect/cognition_curator/cognition.curator
+    write-file /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Intermediates.noindex/cognition.curator.build/Debug-iphonesimulator/cognition.curator.build/cognition.curator-all-target-headers.hmap
+
+WriteAuxiliaryFile /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Intermediates.noindex/cognition.curator.build/Debug-iphonesimulator/cognition.curator.build/cognition.curator-DebugDylibInstallName-normal-arm64.txt (in target 'cognition.curator' from project 'cognition.curator')
+    cd /Users/ngattuso/dev/collect/cognition_curator/cognition.curator
+    write-file /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Intermediates.noindex/cognition.curator.build/Debug-iphonesimulator/cognition.curator.build/cognition.curator-DebugDylibInstallName-normal-arm64.txt
+
+WriteAuxiliaryFile /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Intermediates.noindex/cognition.curator.build/Debug-iphonesimulator/cognition.curator.build/Objects-normal/arm64/cognition.curator_const_extract_protocols.json (in target 'cognition.curator' from project 'cognition.curator')
+    cd /Users/ngattuso/dev/collect/cognition_curator/cognition.curator
+    write-file /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Intermediates.noindex/cognition.curator.build/Debug-iphonesimulator/cognition.curator.build/Objects-normal/arm64/cognition.curator_const_extract_protocols.json
+
+WriteAuxiliaryFile /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Intermediates.noindex/cognition.curator.build/Debug-iphonesimulator/cognition.curator.build/Objects-normal/arm64/cognition.curator.SwiftFileList (in target 'cognition.curator' from project 'cognition.curator')
+    cd /Users/ngattuso/dev/collect/cognition_curator/cognition.curator
+    write-file /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Intermediates.noindex/cognition.curator.build/Debug-iphonesimulator/cognition.curator.build/Objects-normal/arm64/cognition.curator.SwiftFileList
+
+WriteAuxiliaryFile /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Intermediates.noindex/cognition.curator.build/Debug-iphonesimulator/cognition.curator.build/Objects-normal/arm64/cognition.curator.SwiftConstValuesFileList (in target 'cognition.curator' from project 'cognition.curator')
+    cd /Users/ngattuso/dev/collect/cognition_curator/cognition.curator
+    write-file /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Intermediates.noindex/cognition.curator.build/Debug-iphonesimulator/cognition.curator.build/Objects-normal/arm64/cognition.curator.SwiftConstValuesFileList
+
+WriteAuxiliaryFile /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Intermediates.noindex/cognition.curator.build/Debug-iphonesimulator/cognition.curator.build/Objects-normal/arm64/cognition.curator.LinkFileList (in target 'cognition.curator' from project 'cognition.curator')
+    cd /Users/ngattuso/dev/collect/cognition_curator/cognition.curator
+    write-file /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Intermediates.noindex/cognition.curator.build/Debug-iphonesimulator/cognition.curator.build/Objects-normal/arm64/cognition.curator.LinkFileList
+
+WriteAuxiliaryFile /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Intermediates.noindex/cognition.curator.build/Debug-iphonesimulator/cognition.curator.build/Objects-normal/arm64/cognition.curator-OutputFileMap.json (in target 'cognition.curator' from project 'cognition.curator')
+    cd /Users/ngattuso/dev/collect/cognition_curator/cognition.curator
+    write-file /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Intermediates.noindex/cognition.curator.build/Debug-iphonesimulator/cognition.curator.build/Objects-normal/arm64/cognition.curator-OutputFileMap.json
+
+MkDir /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Products/Debug-iphonesimulator/cognition.curator.app (in target 'cognition.curator' from project 'cognition.curator')
+    cd /Users/ngattuso/dev/collect/cognition_curator/cognition.curator
+    /bin/mkdir -p /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Products/Debug-iphonesimulator/cognition.curator.app
+
+WriteAuxiliaryFile /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Intermediates.noindex/cognition.curator.build/Debug-iphonesimulator/cognition.curator.build/DerivedSources/Entitlements-Simulated.plist (in target 'cognition.curator' from project 'cognition.curator')
+    cd /Users/ngattuso/dev/collect/cognition_curator/cognition.curator
+    write-file /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Intermediates.noindex/cognition.curator.build/Debug-iphonesimulator/cognition.curator.build/DerivedSources/Entitlements-Simulated.plist
+
+ProcessProductPackaging /Users/ngattuso/dev/collect/cognition_curator/cognition.curator/cognition.curator/cognition_curator.entitlements /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Intermediates.noindex/cognition.curator.build/Debug-iphonesimulator/cognition.curator.build/cognition.curator.app.xcent (in target 'cognition.curator' from project 'cognition.curator')
+    cd /Users/ngattuso/dev/collect/cognition_curator/cognition.curator
+    
+    Entitlements:
+    
+    {
+}
+    
+    builtin-productPackagingUtility /Users/ngattuso/dev/collect/cognition_curator/cognition.curator/cognition.curator/cognition_curator.entitlements -entitlements -format xml -o /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Intermediates.noindex/cognition.curator.build/Debug-iphonesimulator/cognition.curator.build/cognition.curator.app.xcent
+
+ProcessProductPackaging /Users/ngattuso/dev/collect/cognition_curator/cognition.curator/cognition.curator/cognition_curator.entitlements /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Intermediates.noindex/cognition.curator.build/Debug-iphonesimulator/cognition.curator.build/cognition.curator.app-Simulated.xcent (in target 'cognition.curator' from project 'cognition.curator')
+    cd /Users/ngattuso/dev/collect/cognition_curator/cognition.curator
+    
+    Entitlements:
+    
+    {
+    "application-identifier" = "KF8643NB33.collect.software.cognition-curator";
+}
+    
+    builtin-productPackagingUtility /Users/ngattuso/dev/collect/cognition_curator/cognition.curator/cognition.curator/cognition_curator.entitlements -entitlements -format xml -o /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Intermediates.noindex/cognition.curator.build/Debug-iphonesimulator/cognition.curator.build/cognition.curator.app-Simulated.xcent
+
+ProcessProductPackagingDER /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Intermediates.noindex/cognition.curator.build/Debug-iphonesimulator/cognition.curator.build/cognition.curator.app.xcent /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Intermediates.noindex/cognition.curator.build/Debug-iphonesimulator/cognition.curator.build/cognition.curator.app.xcent.der (in target 'cognition.curator' from project 'cognition.curator')
+    cd /Users/ngattuso/dev/collect/cognition_curator/cognition.curator
+    /usr/bin/derq query -f xml -i /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Intermediates.noindex/cognition.curator.build/Debug-iphonesimulator/cognition.curator.build/cognition.curator.app.xcent -o /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Intermediates.noindex/cognition.curator.build/Debug-iphonesimulator/cognition.curator.build/cognition.curator.app.xcent.der --raw
+
+ProcessProductPackagingDER /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Intermediates.noindex/cognition.curator.build/Debug-iphonesimulator/cognition.curator.build/cognition.curator.app-Simulated.xcent /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Intermediates.noindex/cognition.curator.build/Debug-iphonesimulator/cognition.curator.build/cognition.curator.app-Simulated.xcent.der (in target 'cognition.curator' from project 'cognition.curator')
+    cd /Users/ngattuso/dev/collect/cognition_curator/cognition.curator
+    /usr/bin/derq query -f xml -i /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Intermediates.noindex/cognition.curator.build/Debug-iphonesimulator/cognition.curator.build/cognition.curator.app-Simulated.xcent -o /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Intermediates.noindex/cognition.curator.build/Debug-iphonesimulator/cognition.curator.build/cognition.curator.app-Simulated.xcent.der --raw
+
+Ld /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Products/Debug-iphonesimulator/cognition.curator.app/__preview.dylib normal (in target 'cognition.curator' from project 'cognition.curator')
+    cd /Users/ngattuso/dev/collect/cognition_curator/cognition.curator
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios18.4-simulator -dynamiclib -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.4.sdk -O0 -L/Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Products/Debug-iphonesimulator -F/Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Products/Debug-iphonesimulator -install_name @rpath/cognition.curator.debug.dylib -dead_strip -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -debug_variant -Xlinker -dependency_info -Xlinker /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Intermediates.noindex/cognition.curator.build/Debug-iphonesimulator/cognition.curator.build/Objects-normal/arm64/cognition.curator_dependency_info.dat -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __entitlements -Xlinker /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Intermediates.noindex/cognition.curator.build/Debug-iphonesimulator/cognition.curator.build/cognition.curator.app-Simulated.xcent -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __ents_der -Xlinker /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Intermediates.noindex/cognition.curator.build/Debug-iphonesimulator/cognition.curator.build/cognition.curator.app-Simulated.xcent.der -Xlinker -no_adhoc_codesign -o /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Products/Debug-iphonesimulator/cognition.curator.app/__preview.dylib
+
+DataModelCompile /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Products/Debug-iphonesimulator/cognition.curator.app/ /Users/ngattuso/dev/collect/cognition_curator/cognition.curator/cognition.curator/CognitionCurator.xcdatamodeld (in target 'cognition.curator' from project 'cognition.curator')
+    cd /Users/ngattuso/dev/collect/cognition_curator/cognition.curator
+    /Applications/Xcode.app/Contents/Developer/usr/bin/momc --sdkroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator18.4.sdk --iphonesimulator-deployment-target 18.4 --module cognition_curator /Users/ngattuso/dev/collect/cognition_curator/cognition.curator/cognition.curator/CognitionCurator.xcdatamodeld /Users/ngattuso/Library/Developer/Xcode/DerivedData/cognition.curator-fgysoybdskdcmhbgonkoktmeyebn/Build/Products/Debug-iphonesimulator/cognition.curator.app/
+CognitionCurator.xcdatamodel: note: Model CognitionCurator version checksum: NqZ8hvXGIjDrvKJdOMSAaXiMELQIp0UI53IyGSGk0n4=

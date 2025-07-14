@@ -42,7 +42,7 @@ struct DecksView: View {
                     decksList
                 }
             }
-            .background(Color(.systemGroupedBackground))
+            .background(Color(uiColor: .systemGroupedBackground))
             .navigationTitle("Decks")
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
@@ -79,7 +79,7 @@ struct DecksView: View {
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
-            .background(Color(.systemBackground))
+            .background(Color(uiColor: .systemBackground))
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
             
@@ -203,7 +203,7 @@ struct DeckCardView: View {
             
             // Progress bar
             ProgressView(value: 0.7) // TODO: Calculate actual progress
-                .progressViewStyle(LinearProgressViewStyle(tint: .blue))
+                .progressViewStyle(LinearProgressViewStyle())
                 .scaleEffect(x: 1, y: 2, anchor: .center)
             
             // Footer
@@ -229,7 +229,7 @@ struct DeckCardView: View {
             }
         }
         .padding(20)
-        .background(Color(.systemBackground))
+        .background(Color(uiColor: .systemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
         .onAppear {
@@ -257,7 +257,7 @@ struct FilterChip: View {
                 .fontWeight(.medium)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
-                .background(isSelected ? Color.blue : Color(.systemBackground))
+                .background(isSelected ? Color.blue : Color(uiColor: .systemBackground))
                 .foregroundColor(isSelected ? .white : .primary)
                 .clipShape(Capsule())
                 .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)

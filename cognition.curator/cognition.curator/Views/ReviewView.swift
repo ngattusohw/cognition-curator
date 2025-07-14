@@ -22,7 +22,7 @@ struct ReviewView: View {
                     reviewSessionView
                 }
             }
-            .background(Color(.systemGroupedBackground))
+            .background(Color(uiColor: .systemGroupedBackground))
             .navigationTitle("Review")
             .navigationBarTitleDisplayMode(.large)
             .onAppear {
@@ -106,7 +106,7 @@ struct ReviewView: View {
             }
             
             ProgressView(value: Double(currentCardIndex), total: Double(cardsToReview.count))
-                .progressViewStyle(LinearProgressViewStyle(tint: .blue))
+                .progressViewStyle(LinearProgressViewStyle())
                 .scaleEffect(x: 1, y: 2, anchor: .center)
         }
     }
@@ -116,7 +116,7 @@ struct ReviewView: View {
             // Card container
             ZStack {
                 RoundedRectangle(cornerRadius: 20)
-                    .fill(Color(.systemBackground))
+                    .fill(Color(uiColor: .systemBackground))
                     .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
                 
                 VStack(spacing: 24) {
@@ -128,7 +128,7 @@ struct ReviewView: View {
                             .foregroundColor(.secondary)
                             .padding(.horizontal, 12)
                             .padding(.vertical, 6)
-                            .background(Color(.systemGray6))
+                            .background(Color(uiColor: .systemGray6))
                             .clipShape(Capsule())
                         
                         Text(showingAnswer ? 
@@ -234,7 +234,7 @@ struct ReviewView: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(Color(.systemGray5))
+                    .background(Color(uiColor: .systemGray5))
                     .foregroundColor(.primary)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
@@ -299,7 +299,7 @@ struct DifficultyButton: View {
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 16)
-            .background(Color(.systemBackground))
+            .background(Color(uiColor: .systemBackground))
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
         }

@@ -31,7 +31,7 @@ struct DeckDetailView: View {
             // Cards list
             cardsList
         }
-        .background(Color(.systemGroupedBackground))
+        .background(Color(uiColor: .systemGroupedBackground))
         .navigationTitle(deck.name ?? "Deck")
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
@@ -101,11 +101,11 @@ struct DeckDetailView: View {
             
             // Progress bar
             ProgressView(value: getProgressValue())
-                .progressViewStyle(LinearProgressViewStyle(tint: .blue))
+                .progressViewStyle(LinearProgressViewStyle())
                 .scaleEffect(x: 1, y: 2, anchor: .center)
         }
         .padding(20)
-        .background(Color(.systemBackground))
+        .background(Color(uiColor: .systemBackground))
         .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
     }
     
@@ -126,7 +126,7 @@ struct DeckDetailView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
-        .background(Color(.systemBackground))
+        .background(Color(uiColor: .systemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
         .padding(.horizontal, 20)
@@ -291,7 +291,7 @@ struct CardRowView: View {
             }
         }
         .padding(16)
-        .background(Color(.systemBackground))
+        .background(Color(uiColor: .systemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
     }
