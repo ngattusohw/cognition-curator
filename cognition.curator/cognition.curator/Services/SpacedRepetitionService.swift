@@ -1,101 +1,293 @@
 import Foundation
 import CoreData
 
+// MARK: - Review Mode Configuration
+enum ReviewMode: String, CaseIterable {
+    case normal = "normal"           // Only due cards
+    case practice = "practice"       // Due + recent cards (last 3 days)
+    case cram = "cram"               // All cards from selected decks
+    
+    var displayName: String {
+        switch self {
+        case .normal: return "Normal"
+        case .practice: return "Practice"
+        case .cram: return "Cram"
+        }
+    }
+    
+    var description: String {
+        switch self {
+        case .normal: return "Review only cards that are due"
+        case .practice: return "Practice recently reviewed cards"
+        case .cram: return "Review all cards regardless of schedule"
+        }
+    }
+    
+    var isPremium: Bool {
+        switch self {
+        case .normal: return false
+        case .practice: return true
+        case .cram: return true
+        }
+    }
+}
+
+// MARK: - Card Learning State
+enum CardState: String {
+    case new = "new"               // Never reviewed
+    case learning = "learning"     // In learning phase with short intervals
+    case review = "review"         // Graduated to review phase
+    case relearning = "relearning" // Failed review, back to learning
+}
+
 class SpacedRepetitionService {
     static let shared = SpacedRepetitionService()
     
     private init() {}
     
-    // MARK: - SM-2 Algorithm Implementation
+    // MARK: - Learning Phase Intervals (in minutes)
+    private let learningSteps: [Double] = [1, 10] // 1 minute, then 10 minutes
+    private let graduationInterval: Double = 1 // 1 day to graduate to review
+    private let easyInterval: Double = 4 // 4 days for easy new cards
+    
+    // MARK: - Settings
+    var currentReviewMode: ReviewMode {
+        get {
+            let rawValue = UserDefaults.standard.string(forKey: "reviewMode") ?? ReviewMode.normal.rawValue
+            return ReviewMode(rawValue: rawValue) ?? .normal
+        }
+        set {
+            UserDefaults.standard.set(newValue.rawValue, forKey: "reviewMode")
+        }
+    }
+    
+    var maxNewCardsPerDay: Int {
+        get { UserDefaults.standard.integer(forKey: "maxNewCardsPerDay") == 0 ? 20 : UserDefaults.standard.integer(forKey: "maxNewCardsPerDay") }
+        set { UserDefaults.standard.set(newValue, forKey: "maxNewCardsPerDay") }
+    }
+    
+    var maxReviewCardsPerDay: Int {
+        get { UserDefaults.standard.integer(forKey: "maxReviewCardsPerDay") == 0 ? 100 : UserDefaults.standard.integer(forKey: "maxReviewCardsPerDay") }
+        set { UserDefaults.standard.set(newValue, forKey: "maxReviewCardsPerDay") }
+    }
+    
+    // MARK: - Enhanced SM-2 Algorithm Implementation
     func calculateNextReview(for card: Flashcard, difficulty: Int16) -> Date {
         let reviewSessions = card.reviewSessions?.allObjects as? [ReviewSession] ?? []
         let sortedSessions = reviewSessions.sorted { $0.reviewedAt ?? Date() < $1.reviewedAt ?? Date() }
         
-        let currentInterval: Double
-        let currentEaseFactor: Double
-        
-        if let lastSession = sortedSessions.last {
-            currentInterval = lastSession.interval
-            // For simplicity, we'll use a fixed ease factor of 2.5
-            currentEaseFactor = 2.5
-        } else {
-            // First review
-            currentInterval = 1.0
-            currentEaseFactor = 2.5
-        }
+        let cardState = getCardState(card: card)
+        let currentStep = getCurrentLearningStep(card: card)
         
         let newInterval: Double
         let newEaseFactor: Double
         
-        switch difficulty {
-        case 0: // Again
-            newInterval = 1.0
-            newEaseFactor = max(1.3, currentEaseFactor - 0.2)
-        case 1: // Hard
-            newInterval = currentInterval * 1.2
-            newEaseFactor = max(1.3, currentEaseFactor - 0.15)
-        case 2: // Good
-            newInterval = currentInterval * currentEaseFactor
-            newEaseFactor = currentEaseFactor
-        case 3: // Easy
-            newInterval = currentInterval * currentEaseFactor * 1.3
-            newEaseFactor = currentEaseFactor + 0.15
-        default:
-            newInterval = currentInterval
-            newEaseFactor = currentEaseFactor
+        // Get current ease factor from last session or default
+        let currentEaseFactor = sortedSessions.last?.easeFactor ?? 2.5
+        
+        switch cardState {
+        case .new, .learning, .relearning:
+            newInterval = handleLearningPhase(difficulty: difficulty, currentStep: currentStep)
+            newEaseFactor = currentEaseFactor // Don't change ease factor in learning
+            
+        case .review:
+            (newInterval, newEaseFactor) = handleReviewPhase(
+                difficulty: difficulty,
+                currentInterval: sortedSessions.last?.interval ?? 1.0,
+                currentEaseFactor: currentEaseFactor
+            )
         }
         
         // Create new review session
-        let context = card.managedObjectContext
-        let newSession = ReviewSession(context: context!)
+        let context = card.managedObjectContext!
+        let newSession = ReviewSession(context: context)
         newSession.id = UUID()
         newSession.flashcard = card
         newSession.difficulty = difficulty
         newSession.interval = newInterval
+        newSession.easeFactor = newEaseFactor
         newSession.reviewedAt = Date()
-        newSession.nextReview = Calendar.current.date(byAdding: .day, value: Int(newInterval), to: Date())
+        
+        // Calculate next review date
+        if newInterval < 1440 { // Less than 24 hours (in minutes)
+            newSession.nextReview = Calendar.current.date(byAdding: .minute, value: Int(newInterval), to: Date())
+        } else { // Days
+            newSession.nextReview = Calendar.current.date(byAdding: .day, value: Int(newInterval / 1440), to: Date())
+        }
         
         return newSession.nextReview ?? Date()
     }
     
-    // MARK: - Get Cards Due for Review
-    func getCardsDueForReview(context: NSManagedObjectContext) -> [Flashcard] {
+    private func handleLearningPhase(difficulty: Int16, currentStep: Int) -> Double {
+        switch difficulty {
+        case 0: // Again - restart learning
+            return learningSteps[0]
+        case 1: // Hard - repeat current step
+            return learningSteps[min(currentStep, learningSteps.count - 1)]
+        case 2: // Good - advance to next step or graduate
+            if currentStep + 1 < learningSteps.count {
+                return learningSteps[currentStep + 1]
+            } else {
+                return graduationInterval * 1440 // Convert to minutes
+            }
+        case 3: // Easy - skip to easy interval
+            return easyInterval * 1440 // Convert to minutes
+        default:
+            return learningSteps[0]
+        }
+    }
+    
+    private func handleReviewPhase(difficulty: Int16, currentInterval: Double, currentEaseFactor: Double) -> (interval: Double, easeFactor: Double) {
+        let newEaseFactor: Double
+        let newInterval: Double
+        
+        switch difficulty {
+        case 0: // Again - back to learning
+            newEaseFactor = max(1.3, currentEaseFactor - 0.2)
+            newInterval = learningSteps[0]
+        case 1: // Hard
+            newEaseFactor = max(1.3, currentEaseFactor - 0.15)
+            newInterval = max(1, currentInterval * 1.2) * 1440
+        case 2: // Good
+            newEaseFactor = currentEaseFactor
+            newInterval = max(1, currentInterval / 1440 * currentEaseFactor) * 1440
+        case 3: // Easy
+            newEaseFactor = currentEaseFactor + 0.15
+            newInterval = max(1, currentInterval / 1440 * currentEaseFactor * 1.3) * 1440
+        default:
+            newEaseFactor = currentEaseFactor
+            newInterval = currentInterval
+        }
+        
+        return (newInterval, newEaseFactor)
+    }
+    
+    private func getCardState(card: Flashcard) -> CardState {
+        let reviewSessions = card.reviewSessions?.allObjects as? [ReviewSession] ?? []
+        
+        guard !reviewSessions.isEmpty else { return .new }
+        
+        let sortedSessions = reviewSessions.sorted { $0.reviewedAt ?? Date() < $1.reviewedAt ?? Date() }
+        let lastSession = sortedSessions.last!
+        
+        // Check if last answer was "Again" in review phase
+        if lastSession.difficulty == 0 && lastSession.interval >= 1440 {
+            return .relearning
+        }
+        
+        // Check if still in learning phase
+        if lastSession.interval < 1440 {
+            return .learning
+        }
+        
+        return .review
+    }
+    
+    private func getCurrentLearningStep(card: Flashcard) -> Int {
+        let reviewSessions = card.reviewSessions?.allObjects as? [ReviewSession] ?? []
+        let learningSessions = reviewSessions.filter { $0.interval < 1440 }
+        return learningSessions.count
+    }
+    
+    // MARK: - Get Cards for Review (Enhanced)
+    func getCardsForTodaySession(context: NSManagedObjectContext, limit: Int? = nil, force: Bool = false, mode: ReviewMode? = nil) -> [Flashcard] {
+        let reviewMode = mode ?? currentReviewMode
+        let actualLimit = limit ?? (reviewMode == .cram ? 50 : 20)
+        
+        if force && reviewMode == .normal {
+            // Force mode with normal settings - get recent cards
+            return getRecentCards(context: context, limit: actualLimit)
+        }
+        
+        switch reviewMode {
+        case .normal:
+            return getNormalReviewCards(context: context, limit: actualLimit)
+        case .practice:
+            return getPracticeCards(context: context, limit: actualLimit)
+        case .cram:
+            return getCramCards(context: context, limit: actualLimit)
+        }
+    }
+    
+    private func getNormalReviewCards(context: NSManagedObjectContext, limit: Int) -> [Flashcard] {
+        let now = Date()
         let request: NSFetchRequest<Flashcard> = Flashcard.fetchRequest()
         
-        // Get cards that are due for review (nextReview <= now) or have never been reviewed
-        let now = Date()
+        // Get cards that are due for review or new cards
         request.predicate = NSCompoundPredicate(orPredicateWithSubpredicates: [
-            NSPredicate(format: "reviewSessions.@count == 0"),
-            NSPredicate(format: "ANY reviewSessions.nextReview <= %@", now as NSDate)
+            NSPredicate(format: "reviewSessions.@count == 0"), // New cards
+            NSPredicate(format: "ANY reviewSessions.nextReview <= %@", now as NSDate) // Due cards
         ])
+        
+        request.sortDescriptors = [
+            NSSortDescriptor(keyPath: \Flashcard.createdAt, ascending: true) // Older cards first
+        ]
+        request.fetchLimit = limit
         
         do {
             return try context.fetch(request)
         } catch {
-            print("Error fetching cards due for review: \(error)")
+            print("Error fetching normal review cards: \(error)")
             return []
         }
     }
     
-    // MARK: - Get Cards for Today's Review Session
-    func getCardsForTodaySession(context: NSManagedObjectContext, limit: Int = 20, force: Bool = false) -> [Flashcard] {
-        if force {
-            // When forcing, get all cards regardless of due date
-            let request: NSFetchRequest<Flashcard> = Flashcard.fetchRequest()
-            request.fetchLimit = limit
-            request.sortDescriptors = [NSSortDescriptor(keyPath: \Flashcard.createdAt, ascending: false)]
-            
-            do {
-                return try context.fetch(request)
-            } catch {
-                print("Error fetching cards for forced review: \(error)")
-                return []
-            }
-        } else {
-            // Normal behavior - only get cards that are due
-            let dueCards = getCardsDueForReview(context: context)
-            return Array(dueCards.prefix(limit))
+    private func getPracticeCards(context: NSManagedObjectContext, limit: Int) -> [Flashcard] {
+        let now = Date()
+        let threeDaysAgo = Calendar.current.date(byAdding: .day, value: -3, to: now) ?? now
+        let request: NSFetchRequest<Flashcard> = Flashcard.fetchRequest()
+        
+        // Get due cards + cards reviewed in last 3 days
+        request.predicate = NSCompoundPredicate(orPredicateWithSubpredicates: [
+            NSPredicate(format: "reviewSessions.@count == 0"), // New cards
+            NSPredicate(format: "ANY reviewSessions.nextReview <= %@", now as NSDate), // Due cards
+            NSPredicate(format: "ANY reviewSessions.reviewedAt >= %@", threeDaysAgo as NSDate) // Recent cards
+        ])
+        
+        request.sortDescriptors = [
+            NSSortDescriptor(keyPath: \Flashcard.createdAt, ascending: true)
+        ]
+        request.fetchLimit = limit
+        
+        do {
+            return try context.fetch(request)
+        } catch {
+            print("Error fetching practice cards: \(error)")
+            return []
         }
+    }
+    
+    private func getCramCards(context: NSManagedObjectContext, limit: Int) -> [Flashcard] {
+        let request: NSFetchRequest<Flashcard> = Flashcard.fetchRequest()
+        request.sortDescriptors = [
+            NSSortDescriptor(keyPath: \Flashcard.createdAt, ascending: false) // Newest first for cram
+        ]
+        request.fetchLimit = limit
+        
+        do {
+            return try context.fetch(request)
+        } catch {
+            print("Error fetching cram cards: \(error)")
+            return []
+        }
+    }
+    
+    private func getRecentCards(context: NSManagedObjectContext, limit: Int) -> [Flashcard] {
+        let request: NSFetchRequest<Flashcard> = Flashcard.fetchRequest()
+        request.fetchLimit = limit
+        request.sortDescriptors = [NSSortDescriptor(keyPath: \Flashcard.createdAt, ascending: false)]
+        
+        do {
+            return try context.fetch(request)
+        } catch {
+            print("Error fetching recent cards: \(error)")
+            return []
+        }
+    }
+    
+    // MARK: - Legacy Support
+    func getCardsDueForReview(context: NSManagedObjectContext) -> [Flashcard] {
+        return getNormalReviewCards(context: context, limit: maxReviewCardsPerDay)
     }
     
     // MARK: - Calculate Review Statistics
@@ -105,13 +297,40 @@ class SpacedRepetitionService {
         let correctReviews = reviewSessions.filter { $0.difficulty >= 2 }.count
         let accuracy = totalReviews > 0 ? Double(correctReviews) / Double(totalReviews) : 0.0
         
+        let cardState = getCardState(card: card)
+        let nextReview = reviewSessions.sorted { $0.reviewedAt ?? Date() < $1.reviewedAt ?? Date() }.last?.nextReview
+        
         return ReviewStats(
             totalReviews: totalReviews,
             correctReviews: correctReviews,
             accuracy: accuracy,
             lastReviewed: reviewSessions.last?.reviewedAt,
-            nextReview: reviewSessions.last?.nextReview
+            nextReview: nextReview,
+            cardState: cardState,
+            easeFactor: reviewSessions.last?.easeFactor ?? 2.5
         )
+    }
+    
+    // MARK: - Review Statistics for Home Screen
+    func getTodayReviewStats(context: NSManagedObjectContext) -> (dueCards: Int, newCards: Int, learningCards: Int) {
+        let now = Date()
+        
+        // Due cards
+        let dueRequest: NSFetchRequest<Flashcard> = Flashcard.fetchRequest()
+        dueRequest.predicate = NSPredicate(format: "ANY reviewSessions.nextReview <= %@", now as NSDate)
+        let dueCount = (try? context.count(for: dueRequest)) ?? 0
+        
+        // New cards
+        let newRequest: NSFetchRequest<Flashcard> = Flashcard.fetchRequest()
+        newRequest.predicate = NSPredicate(format: "reviewSessions.@count == 0")
+        let newCount = (try? context.count(for: newRequest)) ?? 0
+        
+        // Learning cards (interval < 1 day)
+        let learningRequest: NSFetchRequest<Flashcard> = Flashcard.fetchRequest()
+        learningRequest.predicate = NSPredicate(format: "ANY reviewSessions.interval < 1440 AND ANY reviewSessions.nextReview <= %@", now as NSDate)
+        let learningCount = (try? context.count(for: learningRequest)) ?? 0
+        
+        return (dueCount, newCount, learningCount)
     }
 }
 
@@ -122,6 +341,8 @@ struct ReviewStats {
     let accuracy: Double
     let lastReviewed: Date?
     let nextReview: Date?
+    let cardState: CardState
+    let easeFactor: Double
 }
 
 // MARK: - Difficulty Levels
@@ -146,6 +367,15 @@ enum DifficultyLevel: Int16, CaseIterable {
         case .hard: return "orange"
         case .good: return "green"
         case .easy: return "blue"
+        }
+    }
+    
+    var description: String {
+        switch self {
+        case .again: return "Incorrect - review again soon"
+        case .hard: return "Difficult - extend interval slightly"
+        case .good: return "Correct - normal interval"
+        case .easy: return "Easy - longer interval"
         }
     }
 } 

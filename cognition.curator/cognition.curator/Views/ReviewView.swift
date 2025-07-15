@@ -107,9 +107,25 @@ struct ReviewView: View {
     private var progressHeader: some View {
         VStack(spacing: 12) {
             HStack {
-                Text("Card \(currentCardIndex + 1) of \(cardsToReview.count)")
-                    .font(.headline)
-                    .fontWeight(.semibold)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Card \(currentCardIndex + 1) of \(cardsToReview.count)")
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                    
+                    // Review mode indicator
+                    HStack(spacing: 4) {
+                        Image(systemName: reviewModeIcon)
+                            .font(.caption2)
+                        Text(SpacedRepetitionService.shared.currentReviewMode.displayName)
+                            .font(.caption2)
+                            .fontWeight(.medium)
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(reviewModeColor.opacity(0.15))
+                    .foregroundColor(reviewModeColor)
+                    .clipShape(Capsule())
+                }
                 
                 Spacer()
                 
@@ -141,6 +157,22 @@ struct ReviewView: View {
             ProgressView(value: Double(currentCardIndex), total: Double(cardsToReview.count))
                 .progressViewStyle(.linear)
                 .scaleEffect(x: 1, y: 2, anchor: .center)
+        }
+    }
+    
+    private var reviewModeIcon: String {
+        switch SpacedRepetitionService.shared.currentReviewMode {
+        case .normal: return "checkmark.circle"
+        case .practice: return "repeat.circle"
+        case .cram: return "bolt.circle"
+        }
+    }
+    
+    private var reviewModeColor: Color {
+        switch SpacedRepetitionService.shared.currentReviewMode {
+        case .normal: return .blue
+        case .practice: return .green
+        case .cram: return .orange
         }
     }
     
@@ -382,7 +414,11 @@ struct ReviewView: View {
     }
     
     private func loadCardsForReview(force: Bool = false) {
-        cardsToReview = SpacedRepetitionService.shared.getCardsForTodaySession(context: viewContext, limit: force ? 50 : 20, force: force)
+        cardsToReview = SpacedRepetitionService.shared.getCardsForTodaySession(
+            context: viewContext, 
+            limit: force ? 50 : nil, 
+            force: force
+        )
         currentCardIndex = 0
         showingAnswer = false
         reviewSessionStartTime = Date()

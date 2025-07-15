@@ -13,6 +13,7 @@ struct HomeView: View {
     @Binding var forceReview: Bool
     
     @State private var showingCreateDeck = false
+    @State private var showingSettings = false
     @State private var cardsDueToday = 0
     @State private var currentStreak = 0
     @State private var animateGradient = false
@@ -53,6 +54,9 @@ struct HomeView: View {
             }
             .sheet(isPresented: $showingCreateDeck) {
                 CreateDeckView()
+            }
+            .sheet(isPresented: $showingSettings) {
+                SettingsView()
             }
             .onAppear {
                 loadStats()
@@ -268,14 +272,15 @@ struct HomeView: View {
                     icon: "gear.fill",
                     color: .gray
                 ) {
-                    // Settings
+                    showingSettings = true
                 }
             }
         }
     }
     
     private func loadStats() {
-        cardsDueToday = SpacedRepetitionService.shared.getCardsForTodaySession(context: viewContext).count
+        let stats = SpacedRepetitionService.shared.getTodayReviewStats(context: viewContext)
+        cardsDueToday = stats.dueCards + stats.newCards + stats.learningCards
         // TODO: Load streak from UserDefaults or Core Data
         currentStreak = 5 // Mock data
     }
