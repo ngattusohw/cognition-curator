@@ -15,6 +15,10 @@ struct ReviewView: View {
     @State private var reviewSessionStartTime = Date()
     @State private var cardsReviewed = 0
     
+    // Swipe gesture state
+    @State private var dragOffset = CGSize.zero
+    @State private var isBeingDragged = false
+    
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
@@ -109,6 +113,26 @@ struct ReviewView: View {
                 
                 Spacer()
                 
+                // Skip button
+                Button(action: {
+                    skipCurrentCard()
+                }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "arrow.forward")
+                            .font(.caption)
+                        Text("Skip")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Color.orange.opacity(0.1))
+                    .foregroundColor(.orange)
+                    .clipShape(Capsule())
+                }
+                
+                Spacer()
+                
                 Text("\(Int(Date().timeIntervalSince(reviewSessionStartTime) / 60))m")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
@@ -172,24 +196,105 @@ struct ReviewView: View {
                     .padding(.top, 20)
                 }
                 .padding(40)
+                
+                // Swipe indicator overlay
+                if isBeingDragged && abs(dragOffset.width) > 20 {
+                    VStack {
+                        Spacer()
+                        HStack {
+                            if dragOffset.width > 0 {
+                                Spacer()
+                            }
+                            
+                            VStack(spacing: 8) {
+                                Image(systemName: "arrow.forward.circle.fill")
+                                    .font(.system(size: 50))
+                                    .foregroundColor(.orange)
+                                
+                                Text("Skip")
+                                    .font(.title2)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.orange)
+                                
+                                Text("\(Int(abs(dragOffset.width)))px")
+                                    .font(.caption)
+                                    .foregroundColor(.orange.opacity(0.7))
+                            }
+                            .opacity(min(abs(dragOffset.width) / 100.0, 1.0))
+                            .scaleEffect(min(abs(dragOffset.width) / 100.0, 1.2))
+                            
+                            if dragOffset.width < 0 {
+                                Spacer()
+                            }
+                        }
+                        Spacer()
+                    }
+                    .allowsHitTesting(false)
+                }
             }
             .frame(height: 300)
             .scaleEffect(isFlipping ? 0.95 : 1.0)
+            .offset(dragOffset)
+            .rotationEffect(.degrees(dragOffset.width / 20.0))
             .animation(.easeInOut(duration: 0.3), value: isFlipping)
-            .onTapGesture {
-                if !isFlipping {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        isFlipping = true
-                    }
-                    
-                    // Flip the content after a short delay
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                        showingAnswer.toggle()
-                        
-                        withAnimation(.easeInOut(duration: 0.3)) {
-                            isFlipping = false
+            .gesture(
+                DragGesture(minimumDistance: 10)
+                    .onChanged { value in
+                        if !isFlipping {
+                            withAnimation(.interactiveSpring()) {
+                                dragOffset = value.translation
+                                isBeingDragged = true
+                            }
                         }
                     }
+                    .onEnded { value in
+                        if !isFlipping {
+                            // Check if swipe was far enough to skip
+                            if abs(value.translation.width) > 80 {
+                                // Skip the card
+                                skipCurrentCard()
+                            } else {
+                                // Snap back to center
+                                withAnimation(.spring()) {
+                                    dragOffset = .zero
+                                }
+                            }
+                        }
+                        isBeingDragged = false
+                    }
+            )
+            .simultaneousGesture(
+                TapGesture()
+                    .onEnded {
+                        if !isBeingDragged && !isFlipping && abs(dragOffset.width) < 10 {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                isFlipping = true
+                            }
+                            
+                            // Flip the content after a short delay
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                                showingAnswer.toggle()
+                                
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    isFlipping = false
+                                }
+                            }
+                        }
+                    }
+            )
+            
+            // Swipe instruction
+            VStack(spacing: 4) {
+                Text("Swipe left or right to skip (80px+)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .opacity(0.7)
+                
+                if isBeingDragged {
+                    Text("Dragging: \(Int(abs(dragOffset.width)))px")
+                        .font(.caption2)
+                        .foregroundColor(.orange)
+                        .fontWeight(.medium)
                 }
             }
         }
@@ -282,6 +387,36 @@ struct ReviewView: View {
         showingAnswer = false
         reviewSessionStartTime = Date()
         cardsReviewed = 0
+        
+        // Reset drag state
+        dragOffset = .zero
+        isBeingDragged = false
+    }
+    
+    private func skipCurrentCard() {
+        guard currentCardIndex < cardsToReview.count else { return }
+        
+        // Animate card sliding out
+        withAnimation(.easeInOut(duration: 0.3)) {
+            dragOffset = CGSize(width: dragOffset.width > 0 ? 400 : -400, height: 0)
+        }
+        
+        // Move to next card after animation
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            currentCardIndex += 1
+            showingAnswer = false
+            isFlipping = false
+            
+            // Reset drag state
+            withAnimation(.easeInOut(duration: 0.2)) {
+                dragOffset = .zero
+                isBeingDragged = false
+            }
+            
+            // Add haptic feedback
+            let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+            impactFeedback.impactOccurred()
+        }
     }
     
     private func handleDifficultySelection(_ difficulty: DifficultyLevel) {
@@ -300,6 +435,10 @@ struct ReviewView: View {
         currentCardIndex += 1
         showingAnswer = false
         isFlipping = false
+        
+        // Reset drag state
+        dragOffset = .zero
+        isBeingDragged = false
         
         // Add haptic feedback
         let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
