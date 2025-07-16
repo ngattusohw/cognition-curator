@@ -211,21 +211,35 @@ class SpacedRepetitionService {
     
     private func getNormalReviewCards(context: NSManagedObjectContext, limit: Int) -> [Flashcard] {
         let now = Date()
-        let request: NSFetchRequest<Flashcard> = Flashcard.fetchRequest()
         
-        // Get cards that are due for review or new cards
-        request.predicate = NSCompoundPredicate(orPredicateWithSubpredicates: [
-            NSPredicate(format: "reviewSessions.@count == 0"), // New cards
-            NSPredicate(format: "ANY reviewSessions.nextReview <= %@", now as NSDate) // Due cards
-        ])
+        // First get new cards (prioritize these)
+        let newRequest: NSFetchRequest<Flashcard> = Flashcard.fetchRequest()
+        newRequest.predicate = NSPredicate(format: "reviewSessions.@count == 0")
+        newRequest.sortDescriptors = [NSSortDescriptor(keyPath: \Flashcard.createdAt, ascending: true)]
+        newRequest.fetchLimit = min(limit, maxNewCardsPerDay)
         
-        request.sortDescriptors = [
-            NSSortDescriptor(keyPath: \Flashcard.createdAt, ascending: true) // Older cards first
-        ]
-        request.fetchLimit = limit
+        // Then get due cards
+        let dueRequest: NSFetchRequest<Flashcard> = Flashcard.fetchRequest()
+        dueRequest.predicate = NSPredicate(format: "ANY reviewSessions.nextReview <= %@", now as NSDate)
+        dueRequest.sortDescriptors = [NSSortDescriptor(keyPath: \Flashcard.createdAt, ascending: true)]
+        dueRequest.fetchLimit = limit
         
         do {
-            return try context.fetch(request)
+            let newCards = try context.fetch(newRequest)
+            let dueCards = try context.fetch(dueRequest)
+            
+            // Combine without duplicates and respect the limit
+            var combinedCards: [Flashcard] = []
+            combinedCards.append(contentsOf: newCards)
+            
+            for dueCard in dueCards {
+                if !combinedCards.contains(where: { $0.id == dueCard.id }) && combinedCards.count < limit {
+                    combinedCards.append(dueCard)
+                }
+            }
+            
+            print("📚 Found \(newCards.count) new cards, \(dueCards.count) due cards, returning \(combinedCards.count) total")
+            return combinedCards
         } catch {
             print("Error fetching normal review cards: \(error)")
             return []
@@ -283,6 +297,92 @@ class SpacedRepetitionService {
             print("Error fetching recent cards: \(error)")
             return []
         }
+    }
+    
+    // MARK: - Deck-Specific Review Methods
+    func getCardsFromDecks(context: NSManagedObjectContext, deckIds: [UUID], mode: ReviewMode = .normal, limit: Int = 50) -> [Flashcard] {
+        let request: NSFetchRequest<Flashcard> = Flashcard.fetchRequest()
+        
+        // Filter by selected decks
+        request.predicate = NSPredicate(format: "deck.id IN %@", deckIds)
+        
+        // Apply mode-specific filtering
+        switch mode {
+        case .normal:
+            // Only due and new cards
+            let now = Date()
+            request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
+                NSPredicate(format: "deck.id IN %@", deckIds),
+                NSCompoundPredicate(orPredicateWithSubpredicates: [
+                    NSPredicate(format: "reviewSessions.@count == 0"), // New cards
+                    NSPredicate(format: "ANY reviewSessions.nextReview <= %@", now as NSDate) // Due cards
+                ])
+            ])
+        case .practice:
+            // Due + recent cards (last 3 days)
+            let now = Date()
+            let threeDaysAgo = Calendar.current.date(byAdding: .day, value: -3, to: now) ?? now
+            request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
+                NSPredicate(format: "deck.id IN %@", deckIds),
+                NSCompoundPredicate(orPredicateWithSubpredicates: [
+                    NSPredicate(format: "reviewSessions.@count == 0"), // New cards
+                    NSPredicate(format: "ANY reviewSessions.nextReview <= %@", now as NSDate), // Due cards
+                    NSPredicate(format: "ANY reviewSessions.reviewedAt >= %@", threeDaysAgo as NSDate) // Recent cards
+                ])
+            ])
+        case .cram:
+            // All cards from selected decks (already filtered above)
+            break
+        }
+        
+        request.sortDescriptors = [
+            NSSortDescriptor(keyPath: \Flashcard.createdAt, ascending: mode == .cram ? false : true)
+        ]
+        request.fetchLimit = limit
+        
+        do {
+            let cards = try context.fetch(request)
+            print("📚 Deck review: Found \(cards.count) cards from \(deckIds.count) decks (\(mode.displayName) mode)")
+            return cards
+        } catch {
+            print("Error fetching cards from decks: \(error)")
+            return []
+        }
+    }
+    
+    func getDeckReviewStats(context: NSManagedObjectContext, deckIds: [UUID]) -> (total: Int, new: Int, due: Int, learning: Int) {
+        let now = Date()
+        
+        // Total cards in selected decks
+        let totalRequest: NSFetchRequest<Flashcard> = Flashcard.fetchRequest()
+        totalRequest.predicate = NSPredicate(format: "deck.id IN %@", deckIds)
+        let totalCount = (try? context.count(for: totalRequest)) ?? 0
+        
+        // New cards
+        let newRequest: NSFetchRequest<Flashcard> = Flashcard.fetchRequest()
+        newRequest.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
+            NSPredicate(format: "deck.id IN %@", deckIds),
+            NSPredicate(format: "reviewSessions.@count == 0")
+        ])
+        let newCount = (try? context.count(for: newRequest)) ?? 0
+        
+        // Due cards
+        let dueRequest: NSFetchRequest<Flashcard> = Flashcard.fetchRequest()
+        dueRequest.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
+            NSPredicate(format: "deck.id IN %@", deckIds),
+            NSPredicate(format: "ANY reviewSessions.nextReview <= %@", now as NSDate)
+        ])
+        let dueCount = (try? context.count(for: dueRequest)) ?? 0
+        
+        // Learning cards
+        let learningRequest: NSFetchRequest<Flashcard> = Flashcard.fetchRequest()
+        learningRequest.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
+            NSPredicate(format: "deck.id IN %@", deckIds),
+            NSPredicate(format: "ANY reviewSessions.interval < 1440 AND ANY reviewSessions.nextReview <= %@", now as NSDate)
+        ])
+        let learningCount = (try? context.count(for: learningRequest)) ?? 0
+        
+        return (totalCount, newCount, dueCount, learningCount)
     }
     
     // MARK: - Legacy Support

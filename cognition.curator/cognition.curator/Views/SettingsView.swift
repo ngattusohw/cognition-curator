@@ -2,10 +2,13 @@ import SwiftUI
 
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var authService: AuthenticationService
     @State private var selectedReviewMode: ReviewMode
     @State private var maxNewCardsPerDay: Double
     @State private var maxReviewCardsPerDay: Double
     @State private var showingPremiumRequired = false
+    @State private var showingSignOutAlert = false
+    @State private var showingDeleteAccountAlert = false
     
     init() {
         let service = SpacedRepetitionService.shared
@@ -22,6 +25,7 @@ struct SettingsView: View {
                     reviewModeSection
                     dailyLimitsSection
                     algorithmInfoSection
+                    accountSection
                     aboutSection
                 }
                 .padding(.horizontal, 20)
@@ -47,6 +51,24 @@ struct SettingsView: View {
             }
         } message: {
             Text("This review mode requires a premium subscription to unlock advanced features.")
+        }
+        .alert("Sign Out", isPresented: $showingSignOutAlert) {
+            Button("Cancel", role: .cancel) { }
+            Button("Sign Out", role: .destructive) {
+                authService.signOut()
+            }
+        } message: {
+            Text("Are you sure you want to sign out? Your progress will be saved to your account.")
+        }
+        .alert("Delete Account", isPresented: $showingDeleteAccountAlert) {
+            Button("Cancel", role: .cancel) { }
+            Button("Delete", role: .destructive) {
+                Task {
+                    await authService.deleteAccount()
+                }
+            }
+        } message: {
+            Text("This action cannot be undone. All your decks, cards, and progress will be permanently deleted.")
         }
     }
     
@@ -190,6 +212,101 @@ struct SettingsView: View {
                 .font(.subheadline)
                 .foregroundColor(.secondary)
                 .lineSpacing(4)
+        }
+        .padding(20)
+        .background(Color(uiColor: UIColor.systemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+    }
+    
+    private var accountSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Account")
+                .font(.title3)
+                .fontWeight(.semibold)
+            
+            VStack(spacing: 16) {
+                // User info
+                if let user = authService.currentUser {
+                    VStack(alignment: .leading, spacing: 12) {
+                        InfoRow(
+                            icon: "person.crop.circle.fill",
+                            title: "Name",
+                            value: user.name,
+                            color: .blue
+                        )
+                        
+                        InfoRow(
+                            icon: "envelope.fill",
+                            title: "Email",
+                            value: user.email,
+                            color: .blue
+                        )
+                        
+                        InfoRow(
+                            icon: "calendar.badge.plus",
+                            title: "Member Since",
+                            value: DateFormatter.monthYear.string(from: user.createdAt),
+                            color: .green
+                        )
+                        
+                        if user.isPremium {
+                            InfoRow(
+                                icon: "crown.fill",
+                                title: "Premium Member",
+                                value: "Active",
+                                color: .orange
+                            )
+                        }
+                    }
+                    
+                    Divider()
+                        .padding(.vertical, 8)
+                    
+                    // Account actions
+                    VStack(spacing: 12) {
+                        Button(action: { showingSignOutAlert = true }) {
+                            HStack {
+                                Image(systemName: "rectangle.portrait.and.arrow.right")
+                                    .foregroundColor(.blue)
+                                    .frame(width: 24)
+                                
+                                Text("Sign Out")
+                                    .font(.subheadline)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(.primary)
+                                
+                                Spacer()
+                                
+                                Image(systemName: "chevron.right")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                            .padding(.vertical, 8)
+                        }
+                        
+                        Button(action: { showingDeleteAccountAlert = true }) {
+                            HStack {
+                                Image(systemName: "trash.fill")
+                                    .foregroundColor(.red)
+                                    .frame(width: 24)
+                                
+                                Text("Delete Account")
+                                    .font(.subheadline)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(.red)
+                                
+                                Spacer()
+                                
+                                Image(systemName: "chevron.right")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                            .padding(.vertical, 8)
+                        }
+                    }
+                }
+            }
         }
         .padding(20)
         .background(Color(uiColor: UIColor.systemBackground))

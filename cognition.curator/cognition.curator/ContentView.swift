@@ -10,6 +10,7 @@ import SwiftUI
 struct ContentView: View {
     @State private var selectedTab = 0
     @State private var forceReview = false
+    @EnvironmentObject var deepLinkHandler: DeepLinkHandler
     
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -28,6 +29,7 @@ struct ContentView: View {
                 .tag(1)
             
             ReviewView(forceReview: $forceReview, selectedTab: $selectedTab)
+                .environmentObject(deepLinkHandler)
                 .tabItem {
                     Image(systemName: "brain.head.profile")
                     Text("Review")
@@ -42,6 +44,15 @@ struct ContentView: View {
                 .tag(3)
         }
         .accentColor(.blue)
+        .onChange(of: deepLinkHandler.selectedTab) { newTab in
+            selectedTab = newTab
+        }
+        .onChange(of: deepLinkHandler.shouldOpenReview) { shouldOpen in
+            if shouldOpen {
+                forceReview = true
+                deepLinkHandler.clearDeepLink()
+            }
+        }
     }
 }
 

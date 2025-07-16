@@ -14,6 +14,7 @@ struct HomeView: View {
     
     @State private var showingCreateDeck = false
     @State private var showingSettings = false
+    @State private var showingDeckSelector = false
     @State private var cardsDueToday = 0
     @State private var currentStreak = 0
     @State private var animateGradient = false
@@ -54,6 +55,11 @@ struct HomeView: View {
             }
             .sheet(isPresented: $showingCreateDeck) {
                 CreateDeckView()
+            }
+            .sheet(isPresented: $showingDeckSelector) {
+                DeckSelectorView { deckIds, mode in
+                    startDeckReview(deckIds: deckIds, mode: mode)
+                }
             }
             .sheet(isPresented: $showingSettings) {
                 SettingsView()
@@ -177,23 +183,42 @@ struct HomeView: View {
                     .font(.subheadline)
                     .foregroundColor(.green)
                 
-                Button(action: {
-                    // Navigate to review anyway
-                    forceReview = true
-                    selectedTab = 2
-                }) {
-                    HStack {
-                        Text("Review Anyway")
-                            .fontWeight(.semibold)
-                        
-                        Spacer()
-                        
-                        Image(systemName: "arrow.right")
+                VStack(spacing: 12) {
+                    Button(action: {
+                        // Navigate to review anyway
+                        forceReview = true
+                        selectedTab = 2
+                    }) {
+                        HStack {
+                            Text("Review Anyway")
+                                .fontWeight(.semibold)
+                            
+                            Spacer()
+                            
+                            Image(systemName: "arrow.clockwise")
+                        }
+                        .padding()
+                        .background(Color.green)
+                        .foregroundColor(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
-                    .padding()
-                    .background(Color.green)
-                    .foregroundColor(.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    
+                    Button(action: {
+                        showingDeckSelector = true
+                    }) {
+                        HStack {
+                            Text("Select Decks to Review")
+                                .fontWeight(.semibold)
+                            
+                            Spacer()
+                            
+                            Image(systemName: "rectangle.stack")
+                        }
+                        .padding()
+                        .background(Color.blue)
+                        .foregroundColor(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
                 }
             }
         }
@@ -260,11 +285,11 @@ struct HomeView: View {
                 }
                 
                 QuickActionButton(
-                    title: "Import",
-                    icon: "square.and.arrow.down.fill",
+                    title: "Select Decks",
+                    icon: "rectangle.stack.fill",
                     color: .green
                 ) {
-                    // Import functionality
+                    showingDeckSelector = true
                 }
                 
                 QuickActionButton(
@@ -283,6 +308,15 @@ struct HomeView: View {
         cardsDueToday = stats.dueCards + stats.newCards + stats.learningCards
         // TODO: Load streak from UserDefaults or Core Data
         currentStreak = 5 // Mock data
+    }
+    
+    private func startDeckReview(deckIds: [UUID], mode: ReviewMode) {
+        // Store the deck review configuration
+        UserDefaults.standard.set(deckIds.map { $0.uuidString }, forKey: "pendingDeckReview")
+        UserDefaults.standard.set(mode.rawValue, forKey: "pendingReviewMode")
+        
+        // Navigate to review tab
+        selectedTab = 2
     }
 }
 

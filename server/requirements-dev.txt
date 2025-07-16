@@ -1,0 +1,28 @@
+# Development dependencies
+-r requirements.txt
+
+# Additional dev tools
+ipython==8.18.1
+jupyter==1.0.0
+notebook==7.0.6
+
+# Testing enhancements
+pytest-xdist==3.5.0
+pytest-benchmark==4.0.0
+pytest-watch==4.2.0
+
+# Database testing
+pytest-postgresql==5.0.0
+
+# Code quality
+pylint==3.0.3
+bandit==1.7.5
+safety==2.3.5
+
+# Documentation
+sphinx==7.2.6
+sphinx-rtd-theme==2.0.0
+
+# Debugging
+pdb++==0.10.3
+pudb==2023.1 

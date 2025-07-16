@@ -4,6 +4,7 @@ import CoreData
 
 struct ReviewView: View {
     @Environment(\.managedObjectContext) private var viewContext
+    @EnvironmentObject var deepLinkHandler: DeepLinkHandler
     @Binding var forceReview: Bool
     @Binding var selectedTab: Int
     
@@ -14,6 +15,8 @@ struct ReviewView: View {
     @State private var showingReviewComplete = false
     @State private var reviewSessionStartTime = Date()
     @State private var cardsReviewed = 0
+    @State private var isDeckSpecificReview = false
+    @State private var currentReviewMode: ReviewMode = .normal
     
     // Swipe gesture state
     @State private var dragOffset = CGSize.zero
@@ -34,11 +37,18 @@ struct ReviewView: View {
             .navigationTitle("Review")
             .navigationBarTitleDisplayMode(.large)
             .onAppear {
+                checkForDeckReview()
+                
                 if forceReview {
                     loadCardsForReview(force: true)
                     forceReview = false
                 } else {
                     loadCardsForReview()
+                }
+            }
+            .onChange(of: deepLinkHandler.targetCardId) { cardId in
+                if let cardId = cardId {
+                    loadSpecificCard(cardId: cardId)
                 }
             }
         }
@@ -116,9 +126,15 @@ struct ReviewView: View {
                     HStack(spacing: 4) {
                         Image(systemName: reviewModeIcon)
                             .font(.caption2)
-                        Text(SpacedRepetitionService.shared.currentReviewMode.displayName)
+                        Text(currentReviewMode.displayName)
                             .font(.caption2)
                             .fontWeight(.medium)
+                        
+                        if isDeckSpecificReview {
+                            Text("• Custom")
+                                .font(.caption2)
+                                .fontWeight(.medium)
+                        }
                     }
                     .padding(.horizontal, 8)
                     .padding(.vertical, 3)
@@ -161,16 +177,16 @@ struct ReviewView: View {
     }
     
     private var reviewModeIcon: String {
-        switch SpacedRepetitionService.shared.currentReviewMode {
-        case .normal: return "checkmark.circle"
+        switch currentReviewMode {
+        case .normal: return isDeckSpecificReview ? "rectangle.stack" : "checkmark.circle"
         case .practice: return "repeat.circle"
         case .cram: return "bolt.circle"
         }
     }
     
     private var reviewModeColor: Color {
-        switch SpacedRepetitionService.shared.currentReviewMode {
-        case .normal: return .blue
+        switch currentReviewMode {
+        case .normal: return isDeckSpecificReview ? .purple : .blue
         case .practice: return .green
         case .cram: return .orange
         }
@@ -413,7 +429,51 @@ struct ReviewView: View {
         }
     }
     
+    private func checkForDeckReview() {
+        // Check if there's a pending deck-specific review
+        if let deckIdStrings = UserDefaults.standard.array(forKey: "pendingDeckReview") as? [String],
+           let modeString = UserDefaults.standard.string(forKey: "pendingReviewMode"),
+           let mode = ReviewMode(rawValue: modeString) {
+            
+            let deckIds = deckIdStrings.compactMap { UUID(uuidString: $0) }
+            if !deckIds.isEmpty {
+                isDeckSpecificReview = true
+                currentReviewMode = mode
+                
+                cardsToReview = SpacedRepetitionService.shared.getCardsFromDecks(
+                    context: viewContext,
+                    deckIds: deckIds,
+                    mode: mode,
+                    limit: 50
+                )
+                
+                // Clear the pending review
+                UserDefaults.standard.removeObject(forKey: "pendingDeckReview")
+                UserDefaults.standard.removeObject(forKey: "pendingReviewMode")
+                
+                currentCardIndex = 0
+                showingAnswer = false
+                reviewSessionStartTime = Date()
+                cardsReviewed = 0
+                dragOffset = .zero
+                isBeingDragged = false
+                
+                print("🎯 Started deck-specific review: \(cardsToReview.count) cards from \(deckIds.count) decks (\(mode.displayName) mode)")
+                return
+            }
+        }
+        
+        // No deck-specific review, use normal loading
+        isDeckSpecificReview = false
+        currentReviewMode = SpacedRepetitionService.shared.currentReviewMode
+    }
+    
     private func loadCardsForReview(force: Bool = false) {
+        // Don't reload if we already have a deck-specific review
+        if isDeckSpecificReview && !cardsToReview.isEmpty {
+            return
+        }
+        
         cardsToReview = SpacedRepetitionService.shared.getCardsForTodaySession(
             context: viewContext, 
             limit: force ? 50 : nil, 
@@ -427,6 +487,49 @@ struct ReviewView: View {
         // Reset drag state
         dragOffset = .zero
         isBeingDragged = false
+    }
+    
+    private func loadSpecificCard(cardId: UUID) {
+        // Find the card by ID
+        let request: NSFetchRequest<Flashcard> = Flashcard.fetchRequest()
+        request.predicate = NSPredicate(format: "id == %@", cardId as CVarArg)
+        request.fetchLimit = 1
+        
+        do {
+            let foundCards = try viewContext.fetch(request)
+            if let specificCard = foundCards.first {
+                // Load this specific card along with other due cards
+                let otherCards = SpacedRepetitionService.shared.getCardsForTodaySession(
+                    context: viewContext,
+                    limit: 19 // Limit to 19 so we have room for the specific card
+                )
+                
+                // Create new cards array with the specific card first
+                var newCardsToReview = [specificCard]
+                
+                // Add other cards if they're not the same card
+                for card in otherCards {
+                    if card.id != cardId {
+                        newCardsToReview.append(card)
+                    }
+                }
+                
+                cardsToReview = newCardsToReview
+                currentCardIndex = 0
+                showingAnswer = false
+                reviewSessionStartTime = Date()
+                cardsReviewed = 0
+                isDeckSpecificReview = false
+                
+                // Reset drag state
+                dragOffset = .zero
+                isBeingDragged = false
+            }
+        } catch {
+            print("Error loading specific card: \(error)")
+            // Fallback to normal review
+            loadCardsForReview(force: true)
+        }
     }
     
     private func skipCurrentCard() {
