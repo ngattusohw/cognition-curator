@@ -1,6 +1,43 @@
 import Foundation
 import SwiftUI
 import CryptoKit
+import AuthenticationServices
+import ObjectiveC
+
+// MARK: - Apple Sign In Delegate
+
+private class AppleSignInDelegate: NSObject, ASAuthorizationControllerDelegate, ASAuthorizationControllerPresentationContextProviding {
+    
+    private let completion: (Result<ASAuthorizationResult, Error>) -> Void
+    
+    init(completion: @escaping (Result<ASAuthorizationResult, Error>) -> Void) {
+        self.completion = completion
+    }
+    
+    func authorizationController(controller: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) {
+        let result = ASAuthorizationResult(credential: authorization.credential, provider: authorization.provider)
+        completion(.success(result))
+    }
+    
+    func authorizationController(controller: ASAuthorizationController, didCompleteWithError error: Error) {
+        completion(.failure(error))
+    }
+    
+    func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let window = windowScene.windows.first else {
+            return UIWindow()
+        }
+        return window
+    }
+}
+
+// MARK: - ASAuthorizationResult
+
+private struct ASAuthorizationResult {
+    let credential: ASAuthorizationCredential
+    let provider: ASAuthorizationProvider
+}
 
 // MARK: - Authentication Service
 
@@ -57,7 +94,8 @@ class AuthenticationService: ObservableObject {
             createdAt: Date(),
             isPremium: false,
             streakCount: 0,
-            totalReviews: 0
+            totalReviews: 0,
+            appleId: nil
         )
         
         // Store user credentials (in production, this would be handled by a secure backend)
@@ -100,6 +138,150 @@ class AuthenticationService: ObservableObject {
             authState = .unauthenticated
             currentUser = nil
             UserDefaults.standard.removeObject(forKey: userDefaultsKey)
+        }
+    }
+    
+    // MARK: - Apple Sign In
+    
+    func signInWithApple() async {
+        await MainActor.run {
+            authState = .authenticating
+        }
+        
+        // Check if we're running on simulator
+        #if targetEnvironment(simulator)
+        // Apple Sign In doesn't work reliably on simulator, provide a demo account
+        await createSimulatorAppleUser()
+        #else
+        // Real device Apple Sign In implementation
+        do {
+            let result = try await performAppleSignIn()
+            
+            guard let appleIDCredential = result.credential as? ASAuthorizationAppleIDCredential else {
+                await setError(.unknown("Invalid Apple ID credential"))
+                return
+            }
+            
+            let userIdentifier = appleIDCredential.user
+            let fullName = appleIDCredential.fullName
+            let email = appleIDCredential.email
+            
+            // For first-time sign in, Apple provides email and name
+            // For subsequent sign ins, they might be nil, so we'll use stored data
+            let displayName = [fullName?.givenName, fullName?.familyName]
+                .compactMap { $0 }
+                .joined(separator: " ")
+            
+            // Check if user already exists (by Apple ID)
+            if let existingUser = await getStoredAppleUser(appleId: userIdentifier) {
+                // Existing user - sign them in
+                await MainActor.run {
+                    currentUser = existingUser
+                    authState = .authenticated(existingUser)
+                    saveCurrentUser(existingUser)
+                }
+            } else {
+                // New user - create account
+                let newUser = UserAccount(
+                    id: UUID(),
+                    email: email ?? "user@privaterelay.appleid.com", // Apple private relay fallback
+                    name: displayName.isEmpty ? "Apple User" : displayName,
+                    createdAt: Date(),
+                    isPremium: false,
+                    streakCount: 0,
+                    totalReviews: 0,
+                    appleId: userIdentifier
+                )
+                
+                await storeAppleUser(user: newUser)
+                
+                await MainActor.run {
+                    currentUser = newUser
+                    authState = .authenticated(newUser)
+                    saveCurrentUser(newUser)
+                }
+            }
+            
+        } catch {
+            let errorMessage: String
+            if let authError = error as? ASAuthorizationError {
+                switch authError.code {
+                case .canceled:
+                    errorMessage = "Apple Sign In was canceled"
+                case .failed:
+                    errorMessage = "Apple Sign In failed. Please try again."
+                case .invalidResponse:
+                    errorMessage = "Invalid response from Apple Sign In"
+                case .notHandled:
+                    errorMessage = "Apple Sign In is not available"
+                case .unknown:
+                    errorMessage = "Apple Sign In encountered an unknown error"
+                case .notInteractive:
+                    errorMessage = "Apple Sign In requires user interaction"
+                case .matchedExcludedCredential:
+                    errorMessage = "Apple Sign In credential is excluded"
+                case .credentialImport:
+                    errorMessage = "Apple Sign In credential import failed"
+                case .credentialExport:
+                    errorMessage = "Apple Sign In credential export failed"
+                @unknown default:
+                    errorMessage = "Apple Sign In failed with error: \(error.localizedDescription)"
+                }
+            } else {
+                errorMessage = "Apple Sign In failed: \(error.localizedDescription)"
+            }
+            await setError(.unknown(errorMessage))
+        }
+        #endif
+    }
+    
+    private func createSimulatorAppleUser() async {
+        // Create a demo Apple user for simulator testing
+        let demoUser = UserAccount(
+            id: UUID(),
+            email: "apple.demo@privaterelay.appleid.com",
+            name: "Apple Demo User",
+            createdAt: Date(),
+            isPremium: false,
+            streakCount: 3,
+            totalReviews: 25,
+            appleId: "simulator_apple_user"
+        )
+        
+        await storeAppleUser(user: demoUser)
+        
+        await MainActor.run {
+            currentUser = demoUser
+            authState = .authenticated(demoUser)
+            saveCurrentUser(demoUser)
+        }
+    }
+    
+    @MainActor
+    private func performAppleSignIn() async throws -> ASAuthorizationResult {
+        let provider = ASAuthorizationAppleIDProvider()
+        let request = provider.createRequest()
+        request.requestedScopes = [.fullName, .email]
+        
+        let controller = ASAuthorizationController(authorizationRequests: [request])
+        
+        return try await withCheckedThrowingContinuation { continuation in
+            let delegate = AppleSignInDelegate { result in
+                switch result {
+                case .success(let authResult):
+                    continuation.resume(returning: authResult)
+                case .failure(let error):
+                    continuation.resume(throwing: error)
+                }
+            }
+            
+            controller.delegate = delegate
+            controller.presentationContextProvider = delegate
+            
+            // Store delegate in the controller to keep it alive
+            objc_setAssociatedObject(controller, "delegate", delegate, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+            
+            controller.performRequests()
         }
     }
     
@@ -201,7 +383,8 @@ class AuthenticationService: ObservableObject {
             createdAt: Date(timeIntervalSince1970: createdAtInterval),
             isPremium: isPremium,
             streakCount: streakCount,
-            totalReviews: totalReviews
+            totalReviews: totalReviews,
+            appleId: userDict["appleId"] as? String
         )
     }
     
@@ -280,6 +463,59 @@ class AuthenticationService: ObservableObject {
         }
     }
     
+    // MARK: - Apple ID Storage Methods
+    
+    private func storeAppleUser(user: UserAccount) async {
+        var storedUsers = getStoredUsers()
+        
+        let userDict: [String: Any] = [
+            "id": user.id.uuidString,
+            "email": user.email,
+            "name": user.name,
+            "createdAt": user.createdAt.timeIntervalSince1970,
+            "isPremium": user.isPremium,
+            "streakCount": user.streakCount,
+            "totalReviews": user.totalReviews,
+            "appleId": user.appleId ?? ""
+        ]
+        
+        // Store by Apple ID instead of email for Apple users
+        if let appleId = user.appleId {
+            storedUsers["apple_\(appleId)"] = userDict
+        }
+        
+        UserDefaults.standard.set(storedUsers, forKey: usersStorageKey)
+    }
+    
+    private func getStoredAppleUser(appleId: String) async -> UserAccount? {
+        let storedUsers = getStoredUsers()
+        let key = "apple_\(appleId)"
+        
+        guard let userDict = storedUsers[key] as? [String: Any],
+              let idString = userDict["id"] as? String,
+              let id = UUID(uuidString: idString),
+              let email = userDict["email"] as? String,
+              let name = userDict["name"] as? String,
+              let createdAtInterval = userDict["createdAt"] as? TimeInterval,
+              let isPremium = userDict["isPremium"] as? Bool,
+              let streakCount = userDict["streakCount"] as? Int,
+              let totalReviews = userDict["totalReviews"] as? Int,
+              let storedAppleId = userDict["appleId"] as? String else {
+            return nil
+        }
+        
+        return UserAccount(
+            id: id,
+            email: email,
+            name: name,
+            createdAt: Date(timeIntervalSince1970: createdAtInterval),
+            isPremium: isPremium,
+            streakCount: streakCount,
+            totalReviews: totalReviews,
+            appleId: storedAppleId
+        )
+    }
+    
     // MARK: - User Profile Updates
     
     func updateUserProfile(name: String? = nil, isPremium: Bool? = nil) async {
@@ -292,7 +528,8 @@ class AuthenticationService: ObservableObject {
             createdAt: currentUser.createdAt,
             isPremium: isPremium ?? currentUser.isPremium,
             streakCount: currentUser.streakCount,
-            totalReviews: currentUser.totalReviews
+            totalReviews: currentUser.totalReviews,
+            appleId: currentUser.appleId
         )
         
         // Update stored user data
@@ -320,7 +557,8 @@ class AuthenticationService: ObservableObject {
             createdAt: currentUser.createdAt,
             isPremium: currentUser.isPremium,
             streakCount: streakCount ?? currentUser.streakCount,
-            totalReviews: totalReviews ?? currentUser.totalReviews
+            totalReviews: totalReviews ?? currentUser.totalReviews,
+            appleId: currentUser.appleId
         )
         
         // Update stored user data

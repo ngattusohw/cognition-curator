@@ -140,11 +140,7 @@ struct SignInView: View {
                     }
                 }
                 
-                // Demo account info
-                DemoAccountView()
-                    .padding(.horizontal, 24)
-                
-                // Switch to sign up
+                // Apple Sign In
                 VStack(spacing: 16) {
                     HStack {
                         Rectangle()
@@ -162,6 +158,23 @@ struct SignInView: View {
                     }
                     .padding(.horizontal, 24)
                     
+                    AppleSignInButton {
+                        Task {
+                            await authService.signInWithApple()
+                            if authService.isAuthenticated {
+                                onSuccess()
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 24)
+                }
+                
+                // Demo account info
+                DemoAccountView()
+                    .padding(.horizontal, 24)
+                
+                // Switch to sign up
+                VStack(spacing: 16) {
                     Button(action: onSwitchToSignUp) {
                         HStack {
                             Text("Don't have an account?")

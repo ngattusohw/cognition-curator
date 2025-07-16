@@ -86,6 +86,18 @@ struct UserAccount: Equatable {
     let isPremium: Bool
     let streakCount: Int
     let totalReviews: Int
+    let appleId: String? // For Apple Sign In users
+    
+    init(id: UUID, email: String, name: String, createdAt: Date, isPremium: Bool, streakCount: Int, totalReviews: Int, appleId: String? = nil) {
+        self.id = id
+        self.email = email
+        self.name = name
+        self.createdAt = createdAt
+        self.isPremium = isPremium
+        self.streakCount = streakCount
+        self.totalReviews = totalReviews
+        self.appleId = appleId
+    }
 }
 
 enum AuthenticationState: Equatable {

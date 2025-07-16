@@ -224,6 +224,35 @@ struct SignUpView: View {
                     }
                 }
                 
+                // Apple Sign In
+                VStack(spacing: 16) {
+                    HStack {
+                        Rectangle()
+                            .fill(Color.gray.opacity(0.3))
+                            .frame(height: 1)
+                        
+                        Text("or")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .padding(.horizontal, 16)
+                        
+                        Rectangle()
+                            .fill(Color.gray.opacity(0.3))
+                            .frame(height: 1)
+                    }
+                    .padding(.horizontal, 24)
+                    
+                    AppleSignInButton {
+                        Task {
+                            await authService.signInWithApple()
+                            if authService.isAuthenticated {
+                                onSuccess()
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 24)
+                }
+                
                 // Switch to sign in
                 VStack(spacing: 16) {
                     HStack {
