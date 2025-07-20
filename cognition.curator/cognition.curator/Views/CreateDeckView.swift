@@ -2,6 +2,12 @@ import SwiftUI
 import UIKit
 import CoreData
 
+// Simple data structure for AI-generated flashcards
+struct FlashcardData {
+    let question: String
+    let answer: String
+}
+
 struct CreateDeckView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.dismiss) private var dismiss
