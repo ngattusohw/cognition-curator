@@ -207,29 +207,29 @@ fi
 # Function to run linting
 run_linting() {
     print_colored $BLUE "Running linting checks..."
-    
+
     print_colored $YELLOW "Running flake8..."
     flake8 src tests
-    
+
     print_colored $YELLOW "Running black (check only)..."
     black --check src tests
-    
+
     print_colored $YELLOW "Running isort (check only)..."
     isort --check-only src tests
-    
+
     print_colored $YELLOW "Running bandit security checks..."
     bandit -r src
-    
+
     print_colored $GREEN "✅ Linting checks passed!"
 }
 
 # Function to run type checking
 run_type_check() {
     print_colored $BLUE "Running type checking..."
-    
+
     print_colored $YELLOW "Running mypy..."
     mypy src
-    
+
     print_colored $GREEN "✅ Type checking passed!"
 }
 
@@ -237,7 +237,7 @@ run_type_check() {
 run_tests() {
     print_colored $BLUE "Running tests..."
     print_colored $YELLOW "Command: $PYTEST_CMD"
-    
+
     if [ "$WATCH_MODE" = true ]; then
         print_colored $BLUE "Running in watch mode (press Ctrl+C to stop)..."
         ptw -- $PYTEST_CMD
@@ -270,4 +270,4 @@ if [ "$RUN_COVERAGE" = true ] && [ "$FAST_MODE" = false ]; then
     print_colored $YELLOW "  Terminal: See above"
 fi
 
-print_colored $GREEN "✅ All checks completed successfully!" 
+print_colored $GREEN "✅ All checks completed successfully!"
