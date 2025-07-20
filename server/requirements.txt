@@ -22,13 +22,13 @@ marshmallow-sqlalchemy==0.29.0
 Flask-Marshmallow==0.15.0
 
 # AI/ML Dependencies
-openai==1.6.1
-langchain==0.1.0
-langchain-openai==0.0.5
-langgraph==0.0.25
-requests==2.31.0
-numpy==1.24.3
-# pandas==2.1.4  # Temporarily disabled due to Python 3.13 compatibility
+#openai==1.10.0
+#langchain==0.1.0
+#langchain-openai==0.0.5
+#langgraph==0.0.25
+#requests==2.31.0
+#numpy==1.26.4
+# # pandas==2.1.4  # Temporarily disabled due to Python 3.13 compatibility
 
 # HTTP Client & Async
 httpx==0.26.0
@@ -66,4 +66,4 @@ pytz==2023.3
 
 # Development
 watchdog==3.0.0
-flask-shell-ipython==1.4.1 
+flask-shell-ipython==0.5.3

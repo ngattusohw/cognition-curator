@@ -88,7 +88,7 @@ struct StudySessionSync: Codable {
 class AnalyticsAPIService: ObservableObject {
     static let shared = AnalyticsAPIService()
 
-    private let baseURL = "http://localhost:5000/api"  // Update with your server URL
+    private let baseURL = "http://localhost:5001/api"  // Update with your server URL
     private var cancellables = Set<AnyCancellable>()
 
     private init() {}
@@ -101,9 +101,11 @@ class AnalyticsAPIService: ObservableObject {
                 .eraseToAnyPublisher()
         }
 
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        addAuthHeader(to: &request)
+        // Use authenticated request from AuthenticationService
+        guard let request = AuthenticationService.shared.createAuthenticatedRequest(url: url, method: "GET") else {
+            return Fail(error: URLError(.userAuthenticationRequired))
+                .eraseToAnyPublisher()
+        }
 
         return URLSession.shared.dataTaskPublisher(for: request)
             .map(\.data)
@@ -120,10 +122,11 @@ class AnalyticsAPIService: ObservableObject {
                 .eraseToAnyPublisher()
         }
 
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        addAuthHeader(to: &request)
+        // Use authenticated request from AuthenticationService
+        guard var request = AuthenticationService.shared.createAuthenticatedRequest(url: url, method: "POST") else {
+            return Fail(error: URLError(.userAuthenticationRequired))
+                .eraseToAnyPublisher()
+        }
 
         do {
             request.httpBody = try JSONEncoder().encode(session)
@@ -157,10 +160,11 @@ class AnalyticsAPIService: ObservableObject {
             "total_study_time_minutes": studyTime
         ]
 
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        addAuthHeader(to: &request)
+        // Use authenticated request from AuthenticationService
+        guard var request = AuthenticationService.shared.createAuthenticatedRequest(url: url, method: "POST") else {
+            return Fail(error: URLError(.userAuthenticationRequired))
+                .eraseToAnyPublisher()
+        }
 
         do {
             request.httpBody = try JSONSerialization.data(withJSONObject: syncData)
@@ -180,14 +184,6 @@ class AnalyticsAPIService: ObservableObject {
             .eraseToAnyPublisher()
     }
 
-    // MARK: - Helper Methods
-
-    private func addAuthHeader(to request: inout URLRequest) {
-        // TODO: Add JWT token from AuthenticationService
-        // if let token = AuthenticationService.shared.accessToken {
-        //     request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        // }
-    }
 
     // MARK: - Mock Data for Testing
 
