@@ -3,7 +3,7 @@ import SwiftUI
 struct OnboardingView: View {
     @StateObject private var onboardingState = OnboardingState()
     @StateObject private var authService = AuthenticationService.shared
-    
+
     var body: some View {
         ZStack {
             // Dynamic background gradient
@@ -17,13 +17,15 @@ struct OnboardingView: View {
             )
             .ignoresSafeArea()
             .animation(.easeInOut(duration: 0.8), value: onboardingState.currentStep)
-            
+
             if onboardingState.showingAuthentication {
-                AuthenticationFlow(onboardingState: onboardingState)
-                    .transition(.asymmetric(
-                        insertion: .move(edge: .trailing).combined(with: .opacity),
-                        removal: .move(edge: .leading).combined(with: .opacity)
-                    ))
+                AppleOnlyAuthView(onSuccess: {
+                    onboardingState.completeOnboarding()
+                })
+                .transition(.asymmetric(
+                    insertion: .move(edge: .trailing).combined(with: .opacity),
+                    removal: .move(edge: .leading).combined(with: .opacity)
+                ))
             } else {
                 OnboardingCarousel(onboardingState: onboardingState)
                     .transition(.asymmetric(
@@ -41,13 +43,13 @@ struct OnboardingView: View {
 struct OnboardingCarousel: View {
     @ObservedObject var onboardingState: OnboardingState
     @State private var animateContent = false
-    
+
     var body: some View {
         VStack(spacing: 0) {
             // Skip button
             HStack {
                 Spacer()
-                
+
                 Button("Skip") {
                     onboardingState.skipToAuthentication()
                 }
@@ -56,7 +58,7 @@ struct OnboardingCarousel: View {
                 .padding(.horizontal, 24)
                 .padding(.top, 16)
             }
-            
+
             // Main content
             TabView(selection: $onboardingState.currentStep) {
                 ForEach(OnboardingStep.allCases.filter { $0 != .authentication }, id: \.self) { step in
@@ -69,22 +71,22 @@ struct OnboardingCarousel: View {
             }
             .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
             .animation(.easeInOut(duration: 0.5), value: onboardingState.currentStep)
-            
+
             // Bottom section
             VStack(spacing: 24) {
                 // Page indicators
                 HStack(spacing: 8) {
                     ForEach(OnboardingStep.allCases.filter { $0 != .authentication }, id: \.self) { step in
                         Circle()
-                            .fill(step == onboardingState.currentStep ? 
-                                  onboardingState.currentStep.page.primaryColor : 
+                            .fill(step == onboardingState.currentStep ?
+                                  onboardingState.currentStep.page.primaryColor :
                                   Color.gray.opacity(0.3))
                             .frame(width: 8, height: 8)
                             .scaleEffect(step == onboardingState.currentStep ? 1.2 : 1.0)
                             .animation(.spring(response: 0.3), value: onboardingState.currentStep)
                     }
                 }
-                
+
                 // Navigation buttons
                 HStack(spacing: 16) {
                     // Back button
@@ -104,7 +106,7 @@ struct OnboardingCarousel: View {
                             .clipShape(RoundedRectangle(cornerRadius: 12))
                         }
                     }
-                    
+
                     // Next/Get Started button
                     Button(action: {
                         if onboardingState.currentStep == .progress {
@@ -142,14 +144,14 @@ struct OnboardingCarousel: View {
 struct OnboardingPageView: View {
     let page: OnboardingPage
     let isActive: Bool
-    
+
     @State private var animateIcon = false
     @State private var animateContent = false
-    
+
     var body: some View {
         VStack(spacing: 32) {
             Spacer()
-            
+
             // Animated icon
             ZStack {
                 Circle()
@@ -157,13 +159,13 @@ struct OnboardingPageView: View {
                     .frame(width: 140, height: 140)
                     .scaleEffect(animateIcon ? 1.1 : 1.0)
                     .animation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: animateIcon)
-                
+
                 Circle()
                     .fill(page.secondaryColor.opacity(0.2))
                     .frame(width: 100, height: 100)
                     .scaleEffect(animateIcon ? 0.9 : 1.0)
                     .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: animateIcon)
-                
+
                 Image(systemName: page.imageName)
                     .font(.system(size: 48, weight: .light))
                     .foregroundStyle(
@@ -178,7 +180,7 @@ struct OnboardingPageView: View {
             }
             .opacity(animateContent ? 1 : 0)
             .offset(y: animateContent ? 0 : 20)
-            
+
             // Content
             VStack(spacing: 16) {
                 Text(page.title)
@@ -188,7 +190,7 @@ struct OnboardingPageView: View {
                     .multilineTextAlignment(.center)
                     .opacity(animateContent ? 1 : 0)
                     .offset(y: animateContent ? 0 : 30)
-                
+
                 Text(page.subtitle)
                     .font(.title2)
                     .fontWeight(.medium)
@@ -196,7 +198,7 @@ struct OnboardingPageView: View {
                     .multilineTextAlignment(.center)
                     .opacity(animateContent ? 1 : 0)
                     .offset(y: animateContent ? 0 : 40)
-                
+
                 Text(page.description)
                     .font(.body)
                     .foregroundColor(.secondary)
@@ -206,7 +208,7 @@ struct OnboardingPageView: View {
                     .opacity(animateContent ? 1 : 0)
                     .offset(y: animateContent ? 0 : 50)
             }
-            
+
             Spacer()
         }
         .onAppear {
@@ -222,17 +224,17 @@ struct OnboardingPageView: View {
             }
         }
     }
-    
+
     private func startAnimations() {
         withAnimation(.easeOut(duration: 0.8)) {
             animateContent = true
         }
-        
+
         withAnimation(.easeInOut(duration: 0.5).delay(0.2)) {
             animateIcon = true
         }
     }
-    
+
     private func resetAnimations() {
         animateContent = false
         animateIcon = false
@@ -245,7 +247,7 @@ struct AuthenticationFlow: View {
     @ObservedObject var onboardingState: OnboardingState
     @StateObject private var authService = AuthenticationService.shared
     @State private var showingSignIn = false
-    
+
     var body: some View {
         VStack(spacing: 0) {
             // Header
@@ -254,14 +256,14 @@ struct AuthenticationFlow: View {
                     .font(.largeTitle)
                     .fontWeight(.bold)
                     .foregroundColor(.primary)
-                
+
                 Text("Start your learning journey today")
                     .font(.title3)
                     .foregroundColor(.secondary)
             }
             .padding(.top, 60)
             .padding(.horizontal, 24)
-            
+
             // Auth content
             if showingSignIn {
                 SignInView(
@@ -290,9 +292,9 @@ struct AuthenticationFlow: View {
                     removal: .move(edge: .trailing).combined(with: .opacity)
                 ))
             }
-            
+
             Spacer(minLength: 20)
-            
+
             // Back to onboarding
             Button(action: {
                 onboardingState.showingAuthentication = false
@@ -313,4 +315,4 @@ struct AuthenticationFlow: View {
 
 #Preview {
     OnboardingView()
-} 
+}
