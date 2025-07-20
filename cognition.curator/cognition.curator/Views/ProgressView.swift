@@ -1,6 +1,7 @@
 import SwiftUI
 import UIKit
 import CoreData
+import Combine
 
 struct ProgressStatsView: View {
     @Environment(\.managedObjectContext) private var viewContext
