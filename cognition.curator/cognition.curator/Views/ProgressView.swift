@@ -6,8 +6,46 @@ import Combine
 struct ProgressStatsView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @StateObject private var progressDataService = ProgressDataService.shared
+    @StateObject private var offlineProgressService = OfflineProgressService.shared
+    @StateObject private var offlineSyncService = OfflineSyncService.shared
     @State private var selectedTimeframe: Timeframe = .week
     @Binding var selectedTab: Int
+
+    // MARK: - Computed Properties for Offline-First Data
+
+    private var currentProgressData: LocalProgressData? {
+        // Use offline data as primary source, fallback to online data converted to local format
+        if let localData = offlineProgressService.localProgressData {
+            return localData
+        } else if let onlineData = progressDataService.progressData {
+            // Convert online data to local format
+            return LocalProgressData(
+                currentStreak: onlineData.currentStreak,
+                longestStreak: onlineData.currentStreak, // Simplified
+                totalCardsReviewed: onlineData.totalCardsReviewed,
+                totalStudyTimeMinutes: onlineData.studyTimeMinutes,
+                overallAccuracyRate: onlineData.averageAccuracy,
+                cardsDueToday: onlineData.cardsDueToday,
+                recentSessions: [], // Would need conversion
+                weeklyStats: [], // Would need conversion
+                topDecks: [], // Would need conversion
+                studyInsights: [],
+                lastUpdated: Date(),
+                isOfflineCalculated: false,
+                pendingSyncCount: offlineSyncService.pendingOperationsCount
+            )
+        }
+        return nil
+    }
+
+    private var streakDisplayValue: String {
+        let streak = currentProgressData?.currentStreak ?? 0
+        if streak == 0 {
+            return "Start today!"
+        } else {
+            return "\(streak) day\(streak == 1 ? "" : "s")"
+        }
+    }
 
     var body: some View {
                 NavigationView {
@@ -56,6 +94,18 @@ struct ProgressStatsView: View {
             .onAppear {
                 progressDataService.loadProgressData(timeframe: selectedTimeframe)
             }
+            .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
+                // Refresh when app comes to foreground
+                progressDataService.refresh()
+                offlineProgressService.refreshProgress()
+
+                // Trigger sync if we have pending operations
+                if offlineSyncService.pendingOperationsCount > 0 {
+                    Task {
+                        await offlineSyncService.syncPendingOperations()
+                    }
+                }
+            }
             .onChange(of: selectedTimeframe) { _, newTimeframe in
                 progressDataService.loadProgressData(timeframe: newTimeframe)
             }
@@ -82,7 +132,7 @@ struct ProgressStatsView: View {
                 .opacity(progressDataService.isLoading ? 0.6 : 1.0)
             }
 
-            if progressDataService.isLoading {
+            if progressDataService.isLoading || offlineProgressService.isCalculating {
                 HStack {
                     ProgressView()
                         .scaleEffect(0.8)
@@ -93,33 +143,83 @@ struct ProgressStatsView: View {
                 .padding(.top, 8)
             }
 
+            // Offline/Sync Status Indicators
+            HStack(spacing: 12) {
+                if currentProgressData?.isOfflineCalculated == true {
+                    HStack(spacing: 4) {
+                        Image(systemName: "wifi.slash")
+                            .font(.caption)
+                            .foregroundColor(.orange)
+                        Text("Offline Mode")
+                            .font(.caption)
+                            .foregroundColor(.orange)
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.orange.opacity(0.1))
+                    .cornerRadius(8)
+                }
+
+                if offlineSyncService.pendingOperationsCount > 0 {
+                    HStack(spacing: 4) {
+                        Image(systemName: "icloud.and.arrow.up")
+                            .font(.caption)
+                            .foregroundColor(.blue)
+                        Text("\(offlineSyncService.pendingOperationsCount) pending")
+                            .font(.caption)
+                            .foregroundColor(.blue)
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.blue.opacity(0.1))
+                    .cornerRadius(8)
+                }
+
+                if offlineSyncService.isSyncing {
+                    HStack(spacing: 4) {
+                        ProgressView()
+                            .scaleEffect(0.6)
+                        Text("Syncing...")
+                            .font(.caption)
+                            .foregroundColor(.green)
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.green.opacity(0.1))
+                    .cornerRadius(8)
+                }
+
+                Spacer()
+            }
+            .padding(.top, 4)
+
                         LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 2), spacing: 16) {
                 StatOverviewCard(
                     title: "Cards Reviewed",
-                    value: "\(progressDataService.progressData?.totalCardsReviewed ?? 0)",
+                    value: "\(currentProgressData?.totalCardsReviewed ?? 0)",
                     icon: "brain.head.profile",
                     color: .blue
                 )
 
                 StatOverviewCard(
                     title: "Accuracy",
-                    value: "\(Int((progressDataService.progressData?.averageAccuracy ?? 0.0) * 100))%",
+                    value: "\(Int((currentProgressData?.overallAccuracyRate ?? 0.0) * 100))%",
                     icon: "target",
                     color: .green
                 )
 
                 StatOverviewCard(
                     title: "Study Time",
-                    value: "\(progressDataService.progressData?.studyTimeMinutes ?? 0)m",
+                    value: "\(currentProgressData?.totalStudyTimeMinutes ?? 0)m",
                     icon: "clock.fill",
                     color: .orange
                 )
 
                 StatOverviewCard(
                     title: "Streak",
-                    value: "\(progressDataService.progressData?.currentStreak ?? 0) days",
+                    value: streakDisplayValue,
                     icon: "flame.fill",
-                    color: .red
+                    color: currentProgressData?.currentStreak == 0 ? .gray : .red
                 )
             }
         }
@@ -137,7 +237,7 @@ struct ProgressStatsView: View {
                         .font(.headline)
                         .fontWeight(.semibold)
 
-                    Text("\(progressDataService.progressData?.cardsDueToday ?? 0) cards waiting for review")
+                    Text("\(currentProgressData?.cardsDueToday ?? 0) cards waiting for review")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }

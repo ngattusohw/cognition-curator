@@ -4,6 +4,7 @@ import CoreData
 
 struct HomeView: View {
     @Environment(\.managedObjectContext) private var viewContext
+    @EnvironmentObject private var authService: AuthenticationService
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \Deck.createdAt, ascending: false)],
         animation: .default)
@@ -14,10 +15,9 @@ struct HomeView: View {
     @StateObject private var progressDataService = ProgressDataService.shared
 
     @State private var showingCreateDeck = false
-    @State private var showingSettings = false
+    @State private var showingProfile = false
     @State private var showingDeckSelector = false
     @State private var cardsDueToday = 0
-    @State private var animateGradient = false
 
     var body: some View {
         NavigationView {
@@ -35,8 +35,8 @@ struct HomeView: View {
                     // Recent decks
                     recentDecksSection
 
-                    // Quick actions
-                    quickActionsSection
+                    // Profile quick access
+                    profileQuickAccessSection
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 20)
@@ -45,6 +45,14 @@ struct HomeView: View {
             .navigationTitle("Cognition Curator")
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: { showingProfile = true }) {
+                        Image(systemName: "person.crop.circle.fill")
+                            .font(.title2)
+                            .foregroundColor(.blue)
+                    }
+                }
+
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: { showingCreateDeck = true }) {
                         Image(systemName: "plus.circle.fill")
@@ -61,8 +69,9 @@ struct HomeView: View {
                     startDeckReview(deckIds: deckIds, mode: mode)
                 }
             }
-            .sheet(isPresented: $showingSettings) {
-                SettingsView()
+            .sheet(isPresented: $showingProfile) {
+                ProfileView()
+                    .environmentObject(authService)
             }
             .onAppear {
                 loadStats()
@@ -73,13 +82,13 @@ struct HomeView: View {
 
     private var headerSection: some View {
         VStack(spacing: 16) {
-            // Animated gradient background
+            // Clean, calm header
             RoundedRectangle(cornerRadius: 20)
                 .fill(
                     LinearGradient(
-                        colors: [.blue.opacity(0.8), .purple.opacity(0.6)],
-                        startPoint: animateGradient ? .topLeading : .bottomTrailing,
-                        endPoint: animateGradient ? .bottomTrailing : .topLeading
+                        colors: [.blue.opacity(0.1), .purple.opacity(0.05)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
                     )
                 )
                 .frame(height: 120)
@@ -87,49 +96,59 @@ struct HomeView: View {
                     VStack(spacing: 8) {
                         Image(systemName: "brain.head.profile")
                             .font(.system(size: 32, weight: .medium))
-                            .foregroundColor(.white)
+                            .foregroundColor(.blue)
 
                         Text("Welcome back!")
                             .font(.title2)
                             .fontWeight(.semibold)
-                            .foregroundColor(.white)
+                            .foregroundColor(.primary)
 
                         Text("Ready to strengthen your memory?")
                             .font(.subheadline)
-                            .foregroundColor(.white.opacity(0.9))
+                            .foregroundColor(.secondary)
                     }
                 )
-                .onAppear {
-                    withAnimation(.easeInOut(duration: 3).repeatForever(autoreverses: true)) {
-                        animateGradient.toggle()
-                    }
-                }
+                .background(Color(uiColor: UIColor.systemBackground))
+                .clipShape(RoundedRectangle(cornerRadius: 20))
+                .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
         }
     }
 
     private var statsSection: some View {
-        HStack(spacing: 16) {
-                        StatCard(
-                title: "Cards Due",
-                value: "\(progressDataService.progressData?.cardsDueToday ?? cardsDueToday)",
-                icon: "clock.fill",
-                color: .orange
-            )
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Today's Overview")
+                .font(.title3)
+                .fontWeight(.semibold)
+                .foregroundColor(.primary)
 
-            StatCard(
-                title: "Streak",
-                value: "\(progressDataService.progressData?.currentStreak ?? 0) days",
-                icon: "flame.fill",
-                color: .red
-            )
+            HStack(spacing: 16) {
+                StatCard(
+                    title: "Cards Due",
+                    value: "\(progressDataService.progressData?.cardsDueToday ?? cardsDueToday)",
+                    icon: "clock.fill",
+                    color: cardsDueToday > 0 ? .orange : .green
+                )
 
-            StatCard(
-                title: "Decks",
-                value: "\(decks.count)",
-                icon: "rectangle.stack.fill",
-                color: .blue
-            )
+                StatCard(
+                    title: "Streak",
+                    value: streakDisplayText,
+                    icon: "flame.fill",
+                    color: (progressDataService.progressData?.currentStreak ?? 0) > 0 ? .red : .gray
+                )
+
+                StatCard(
+                    title: "Decks",
+                    value: "\(decks.count)",
+                    icon: "rectangle.stack.fill",
+                    color: .blue
+                )
+            }
         }
+    }
+
+    private var streakDisplayText: String {
+        let streak = progressDataService.progressData?.currentStreak ?? 0
+        return streak > 0 ? "\(streak) days" : "Start today"
     }
 
     private var dailyReviewCard: some View {
@@ -147,12 +166,13 @@ struct HomeView: View {
 
                 let totalCardsDue = progressDataService.progressData?.cardsDueToday ?? cardsDueToday
                 if totalCardsDue > 0 {
-                    Text("\(totalCardsDue) cards")
+                    Text("\(totalCardsDue)")
                         .font(.caption)
+                        .fontWeight(.semibold)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
-                        .background(Color.orange.opacity(0.2))
-                        .foregroundColor(.orange)
+                        .background(Color.blue.opacity(0.1))
+                        .foregroundColor(.blue)
                         .clipShape(Capsule())
                 }
             }
@@ -271,11 +291,26 @@ struct HomeView: View {
         }
     }
 
-    private var quickActionsSection: some View {
+    private var profileQuickAccessSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Quick Actions")
-                .font(.title3)
-                .fontWeight(.semibold)
+            HStack {
+                Text("Quick Access")
+                    .font(.title3)
+                    .fontWeight(.semibold)
+
+                Spacer()
+
+                Button(action: { showingProfile = true }) {
+                    HStack(spacing: 4) {
+                        Text("Profile")
+                            .font(.subheadline)
+                            .foregroundColor(.blue)
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                            .foregroundColor(.blue)
+                    }
+                }
+            }
 
             HStack(spacing: 16) {
                 QuickActionButton(
@@ -295,11 +330,11 @@ struct HomeView: View {
                 }
 
                 QuickActionButton(
-                    title: "Settings",
-                    icon: "gear.fill",
-                    color: .gray
+                    title: "Profile",
+                    icon: "person.crop.circle.fill",
+                    color: .purple
                 ) {
-                    showingSettings = true
+                    showingProfile = true
                 }
             }
         }

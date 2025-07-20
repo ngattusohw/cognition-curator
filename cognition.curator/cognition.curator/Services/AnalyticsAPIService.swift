@@ -137,6 +137,58 @@ struct StudySessionSync: Codable {
     let accuracyRate: Double
     let deviceType: String
     let appVersion: String?
+
+    enum CodingKeys: String, CodingKey {
+        case deckId = "deck_id"
+        case sessionType = "session_type"
+        case startedAt = "started_at"
+        case endedAt = "ended_at"
+        case durationMinutes = "duration_minutes"
+        case cardsReviewed = "cards_reviewed"
+        case cardsCorrect = "cards_correct"
+        case cardsIncorrect = "cards_incorrect"
+        case accuracyRate = "accuracy_rate"
+        case deviceType = "device_type"
+        case appVersion = "app_version"
+    }
+}
+
+struct FlashcardReviewSync: Codable {
+    let flashcardId: String
+    let difficultyRating: Int
+    let wasCorrect: Bool
+    let responseTimeSeconds: Double
+    let sessionType: String
+    let deviceType: String
+    let appVersion: String?
+    let easeFactorBefore: Double?
+    let easeFactorAfter: Double?
+    let intervalBeforeDays: Int?
+    let intervalAfterDays: Int?
+    let repetitionsBefore: Int?
+    let repetitionsAfter: Int?
+    let confidenceLevel: Double?
+    let hintUsed: Bool
+    let multipleAttempts: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case flashcardId = "flashcard_id"
+        case difficultyRating = "difficulty_rating"
+        case wasCorrect = "was_correct"
+        case responseTimeSeconds = "response_time_seconds"
+        case sessionType = "session_type"
+        case deviceType = "device_type"
+        case appVersion = "app_version"
+        case easeFactorBefore = "ease_factor_before"
+        case easeFactorAfter = "ease_factor_after"
+        case intervalBeforeDays = "interval_before_days"
+        case intervalAfterDays = "interval_after_days"
+        case repetitionsBefore = "repetitions_before"
+        case repetitionsAfter = "repetitions_after"
+        case confidenceLevel = "confidence_level"
+        case hintUsed = "hint_used"
+        case multipleAttempts = "multiple_attempts"
+    }
 }
 
 // MARK: - Analytics API Service
@@ -206,28 +258,131 @@ class AnalyticsAPIService: ObservableObject {
     // MARK: - Sync Study Session
 
     func syncStudySession(_ session: StudySessionSync) -> AnyPublisher<Bool, Error> {
+        print("🔄 AnalyticsAPIService: Starting study session sync...")
+
         guard let url = URL(string: "\(baseURL)/sync/study-session") else {
+            print("❌ AnalyticsAPIService: Invalid sync URL: \(baseURL)/sync/study-session")
             return Fail(error: URLError(.badURL))
                 .eraseToAnyPublisher()
         }
 
+        print("🔗 AnalyticsAPIService: Sync URL: \(url)")
+
         // Use authenticated request from AuthenticationService
         guard var request = AuthenticationService.shared.createAuthenticatedRequest(url: url, method: "POST") else {
+            print("❌ AnalyticsAPIService: Failed to create authenticated sync request")
             return Fail(error: URLError(.userAuthenticationRequired))
                 .eraseToAnyPublisher()
         }
 
         do {
-            request.httpBody = try JSONEncoder().encode(session)
+            let jsonData = try JSONEncoder().encode(session)
+            request.httpBody = jsonData
+
+            if let jsonString = String(data: jsonData, encoding: .utf8) {
+                print("📤 AnalyticsAPIService: Sending session data: \(jsonString)")
+            }
         } catch {
+            print("❌ AnalyticsAPIService: Failed to encode session data: \(error)")
+            return Fail(error: error)
+                .eraseToAnyPublisher()
+        }
+
+        print("🔐 AnalyticsAPIService: Authenticated sync request created")
+
+        return URLSession.shared.dataTaskPublisher(for: request)
+            .handleEvents(
+                receiveSubscription: { _ in
+                    print("📡 AnalyticsAPIService: Starting sync network request...")
+                },
+                receiveOutput: { data, response in
+                    print("📥 AnalyticsAPIService: Received sync response")
+                    if let httpResponse = response as? HTTPURLResponse {
+                        print("📊 AnalyticsAPIService: Sync status code: \(httpResponse.statusCode)")
+                    }
+                    print("📦 AnalyticsAPIService: Sync data size: \(data.count) bytes")
+                    if let responseString = String(data: data, encoding: .utf8) {
+                        print("📄 AnalyticsAPIService: Sync response: \(responseString)")
+                    }
+                },
+                receiveCompletion: { completion in
+                    if case .failure(let error) = completion {
+                        print("❌ AnalyticsAPIService: Sync network error: \(error)")
+                    } else {
+                        print("✅ AnalyticsAPIService: Sync request completed")
+                    }
+                }
+            )
+            .map { data, response in
+                if let httpResponse = response as? HTTPURLResponse {
+                    let success = httpResponse.statusCode >= 200 && httpResponse.statusCode < 300
+                    print("✅ AnalyticsAPIService: Sync success: \(success)")
+                    return success
+                }
+                return false
+            }
+            .catch { error in
+                print("❌ AnalyticsAPIService: Study session sync failed: \(error)")
+                return Just(false)
+                    .setFailureType(to: Error.self)
+            }
+            .receive(on: DispatchQueue.main)
+            .eraseToAnyPublisher()
+    }
+
+    // MARK: - Sync Individual Flashcard Review
+
+    func syncFlashcardReview(_ review: FlashcardReviewSync) -> AnyPublisher<Bool, Error> {
+        print("🔄 AnalyticsAPIService: Starting flashcard review sync...")
+
+        guard let url = URL(string: "\(baseURL)/sync/flashcard-review") else {
+            print("❌ AnalyticsAPIService: Invalid flashcard sync URL")
+            return Fail(error: URLError(.badURL))
+                .eraseToAnyPublisher()
+        }
+
+        print("🔗 AnalyticsAPIService: Flashcard sync URL: \(url)")
+
+        guard var request = AuthenticationService.shared.createAuthenticatedRequest(url: url, method: "POST") else {
+            print("❌ AnalyticsAPIService: Failed to create authenticated flashcard sync request")
+            return Fail(error: URLError(.userAuthenticationRequired))
+                .eraseToAnyPublisher()
+        }
+
+        do {
+            let jsonData = try JSONEncoder().encode(review)
+            request.httpBody = jsonData
+
+            if let jsonString = String(data: jsonData, encoding: .utf8) {
+                print("📤 AnalyticsAPIService: Sending flashcard review: \(jsonString)")
+            }
+        } catch {
+            print("❌ AnalyticsAPIService: Failed to encode flashcard review: \(error)")
             return Fail(error: error)
                 .eraseToAnyPublisher()
         }
 
         return URLSession.shared.dataTaskPublisher(for: request)
-            .map { _ in true }
+            .handleEvents(
+                receiveOutput: { data, response in
+                    if let httpResponse = response as? HTTPURLResponse {
+                        print("📊 AnalyticsAPIService: Flashcard sync status: \(httpResponse.statusCode)")
+                    }
+                    if let responseString = String(data: data, encoding: .utf8) {
+                        print("📄 AnalyticsAPIService: Flashcard sync response: \(responseString)")
+                    }
+                }
+            )
+            .map { data, response in
+                if let httpResponse = response as? HTTPURLResponse {
+                    let success = httpResponse.statusCode >= 200 && httpResponse.statusCode < 300
+                    print("✅ AnalyticsAPIService: Flashcard sync success: \(success)")
+                    return success
+                }
+                return false
+            }
             .catch { error in
-                print("Failed to sync study session: \(error)")
+                print("❌ AnalyticsAPIService: Flashcard review sync failed: \(error)")
                 return Just(false)
                     .setFailureType(to: Error.self)
             }

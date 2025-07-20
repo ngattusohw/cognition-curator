@@ -49,6 +49,7 @@ def create_app(config_name=None):
     from src.api.flashcards import flashcards_bp
     from src.api.sync import sync_bp
     from src.api.users import users_bp
+    from src.api.ai import ai_bp
 
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
     app.register_blueprint(users_bp, url_prefix="/api/users")
@@ -56,6 +57,7 @@ def create_app(config_name=None):
     app.register_blueprint(flashcards_bp, url_prefix="/api/flashcards")
     app.register_blueprint(analytics_bp, url_prefix="/api/analytics")
     app.register_blueprint(sync_bp, url_prefix="/api/sync")
+    app.register_blueprint(ai_bp, url_prefix="/api/ai")
 
     # Health check endpoint
     @app.route("/health")

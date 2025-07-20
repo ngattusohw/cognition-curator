@@ -14,6 +14,14 @@ struct AddCardView: View {
     @State private var showingError = false
     @State private var errorMessage = ""
 
+    // AI Answer Generation
+    @State private var isGeneratingAnswer = false
+    @State private var generatedAnswer: AIAnswerResponse?
+    @State private var showingAIAnswer = false
+    @State private var showingPremiumRequired = false
+    @StateObject private var aiService = AIGenerationService.shared
+    @StateObject private var subscriptionService = SubscriptionService.shared
+
     private var flashcardAPIService: FlashcardAPIService {
         FlashcardAPIService(authService: authService)
     }
@@ -61,6 +69,33 @@ struct AddCardView: View {
             } message: {
                 Text(errorMessage)
             }
+            .sheet(isPresented: $showingAIAnswer) {
+                if let generatedAnswer = generatedAnswer {
+                    AIAnswerReviewView(
+                        question: question,
+                        aiAnswer: generatedAnswer,
+                        onAccept: { acceptedAnswer in
+                            answer = acceptedAnswer
+                            showingAIAnswer = false
+                        },
+                        onReject: {
+                            showingAIAnswer = false
+                        }
+                    )
+                }
+            }
+            .sheet(isPresented: $showingPremiumRequired) {
+                PremiumRequiredView(
+                    feature: .aiAnswerGeneration,
+                    onUpgrade: {
+                        // Handle upgrade action
+                        showingPremiumRequired = false
+                    },
+                    onDismiss: {
+                        showingPremiumRequired = false
+                    }
+                )
+            }
         }
     }
 
@@ -94,13 +129,66 @@ struct AddCardView: View {
             }
 
             VStack(alignment: .leading, spacing: 8) {
-                Text("Answer")
-                    .font(.headline)
-                    .fontWeight(.semibold)
+                HStack {
+                    Text("Answer")
+                        .font(.headline)
+                        .fontWeight(.semibold)
+
+                    Spacer()
+
+                    // AI Generate Answer Button
+                    Button(action: generateAIAnswer) {
+                        HStack(spacing: 4) {
+                            if isGeneratingAnswer {
+                                ProgressView()
+                                    .scaleEffect(0.7)
+                                    .foregroundColor(.white)
+                            } else {
+                                Image(systemName: "brain.head.profile")
+                                    .font(.caption)
+                            }
+                            Text("AI Generate")
+                                .font(.caption)
+                                .fontWeight(.medium)
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(subscriptionService.isPremium ? Color.purple : Color.gray)
+                        .foregroundColor(.white)
+                        .clipShape(Capsule())
+                    }
+                    .disabled(question.isEmpty || isGeneratingAnswer)
+                    .opacity(question.isEmpty ? 0.6 : 1.0)
+                }
 
                 TextField("Enter the answer...", text: $answer, axis: .vertical)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .lineLimit(3...6)
+
+                // AI Tip
+                if !subscriptionService.isPremium {
+                    HStack {
+                        Image(systemName: "crown.fill")
+                            .font(.caption)
+                            .foregroundColor(.orange)
+                        Text("AI answer generation available with Premium")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Spacer()
+                    }
+                    .padding(.top, 4)
+                } else if question.isEmpty {
+                    HStack {
+                        Image(systemName: "lightbulb.fill")
+                            .font(.caption)
+                            .foregroundColor(.blue)
+                        Text("Enter a question to generate an AI answer")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Spacer()
+                    }
+                    .padding(.top, 4)
+                }
             }
 
             // Preview card
@@ -152,7 +240,42 @@ struct AddCardView: View {
         }
     }
 
-        private func addCard() async {
+        private func generateAIAnswer() {
+        guard !question.isEmpty else { return }
+
+        // Check premium access
+        if subscriptionService.requiresPremium(.aiAnswerGeneration) {
+            showingPremiumRequired = true
+            return
+        }
+
+        isGeneratingAnswer = true
+
+        Task {
+            do {
+                let aiAnswer = try await aiService.generateAnswer(
+                    for: question,
+                    context: nil,
+                    difficulty: .medium,
+                    deckTopic: deck.name
+                )
+
+                await MainActor.run {
+                    generatedAnswer = aiAnswer
+                    showingAIAnswer = true
+                    isGeneratingAnswer = false
+                }
+            } catch {
+                await MainActor.run {
+                    isGeneratingAnswer = false
+                    errorMessage = "Failed to generate answer: \(error.localizedDescription)"
+                    showingError = true
+                }
+            }
+        }
+    }
+
+    private func addCard() async {
         guard !question.isEmpty && !answer.isEmpty else { return }
 
         await MainActor.run {
