@@ -17,7 +17,18 @@ struct cognition_curatorApp: App {
     var body: some Scene {
         WindowGroup {
             Group {
-                if authService.isAuthenticated && onboardingState.isOnboardingComplete {
+                if case .validating = authService.authState {
+                    // Show loading screen while validating JWT token
+                    VStack(spacing: 20) {
+                        ProgressView()
+                            .scaleEffect(1.5)
+                        Text("Signing you in...")
+                            .font(.headline)
+                            .foregroundColor(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color(uiColor: UIColor.systemBackground))
+                } else if authService.isAuthenticated && onboardingState.isOnboardingComplete {
                     // Main app content
                     ContentView()
                         .environment(\.managedObjectContext, persistenceController.container.viewContext)

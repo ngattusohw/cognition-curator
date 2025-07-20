@@ -19,7 +19,7 @@ enum OnboardingStep: Int, CaseIterable {
     case deckManagement = 2
     case progress = 3
     case authentication = 4
-    
+
     var page: OnboardingPage {
         switch self {
         case .welcome:
@@ -87,7 +87,7 @@ struct UserAccount: Equatable {
     let streakCount: Int
     let totalReviews: Int
     let appleId: String? // For Apple Sign In users
-    
+
     init(id: UUID, email: String, name: String, createdAt: Date, isPremium: Bool, streakCount: Int, totalReviews: Int, appleId: String? = nil) {
         self.id = id
         self.email = email
@@ -103,14 +103,17 @@ struct UserAccount: Equatable {
 enum AuthenticationState: Equatable {
     case unauthenticated
     case authenticating
+    case validating  // Validating existing JWT token
     case authenticated(UserAccount)
     case error(AuthError)
-    
+
     static func == (lhs: AuthenticationState, rhs: AuthenticationState) -> Bool {
         switch (lhs, rhs) {
         case (.unauthenticated, .unauthenticated):
             return true
         case (.authenticating, .authenticating):
+            return true
+        case (.validating, .validating):
             return true
         case (.authenticated(let lhsUser), .authenticated(let rhsUser)):
             return lhsUser.id == rhsUser.id
@@ -130,7 +133,7 @@ enum AuthError: LocalizedError, Equatable {
     case wrongPassword
     case networkError
     case unknown(String)
-    
+
     var errorDescription: String? {
         switch self {
         case .invalidEmail:
@@ -158,25 +161,25 @@ struct SignUpForm {
     var email: String = ""
     var password: String = ""
     var confirmPassword: String = ""
-    
+
     var isValidName: Bool {
         !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && name.count >= 2
     }
-    
+
     var isValidEmail: Bool {
         let emailRegex = "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}"
         let emailPredicate = NSPredicate(format:"SELF MATCHES %@", emailRegex)
         return emailPredicate.evaluate(with: email)
     }
-    
+
     var isValidPassword: Bool {
         password.count >= 8
     }
-    
+
     var passwordsMatch: Bool {
         password == confirmPassword && !password.isEmpty
     }
-    
+
     var isValid: Bool {
         isValidName && isValidEmail && isValidPassword && passwordsMatch
     }
@@ -185,7 +188,7 @@ struct SignUpForm {
 struct SignInForm {
     var email: String = ""
     var password: String = ""
-    
+
     var isValid: Bool {
         !email.isEmpty && !password.isEmpty
     }
@@ -197,52 +200,52 @@ class OnboardingState: ObservableObject {
     @Published var currentStep: OnboardingStep = .welcome
     @Published var isOnboardingComplete: Bool = false
     @Published var showingAuthentication: Bool = false
-    
+
     private let userDefaultsKey = "hasCompletedOnboarding"
-    
+
     init() {
         // Check if user has completed onboarding before
         isOnboardingComplete = UserDefaults.standard.bool(forKey: userDefaultsKey)
     }
-    
+
     func nextStep() {
         if let nextStep = OnboardingStep(rawValue: currentStep.rawValue + 1) {
             withAnimation(.easeInOut(duration: 0.5)) {
                 currentStep = nextStep
             }
-            
+
             if nextStep == .authentication {
                 showingAuthentication = true
             }
         }
     }
-    
+
     func previousStep() {
         if let previousStep = OnboardingStep(rawValue: currentStep.rawValue - 1) {
             withAnimation(.easeInOut(duration: 0.5)) {
                 currentStep = previousStep
             }
-            
+
             if currentStep != .authentication {
                 showingAuthentication = false
             }
         }
     }
-    
+
     func skipToAuthentication() {
         withAnimation(.easeInOut(duration: 0.5)) {
             currentStep = .authentication
             showingAuthentication = true
         }
     }
-    
+
     func completeOnboarding() {
         UserDefaults.standard.set(true, forKey: userDefaultsKey)
         withAnimation(.easeInOut(duration: 0.5)) {
             isOnboardingComplete = true
         }
     }
-    
+
     func resetOnboarding() {
         UserDefaults.standard.set(false, forKey: userDefaultsKey)
         withAnimation(.easeInOut(duration: 0.5)) {
@@ -251,4 +254,4 @@ class OnboardingState: ObservableObject {
             showingAuthentication = false
         }
     }
-} 
+}

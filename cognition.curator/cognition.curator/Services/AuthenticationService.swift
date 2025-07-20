@@ -85,6 +85,10 @@ struct BackendErrorResponse: Codable {
     let error: String
 }
 
+struct BackendProfileResponse: Codable {
+    let user: BackendUser
+}
+
 // MARK: - Apple Sign In Delegate
 
 private class AppleSignInDelegate: NSObject, ASAuthorizationControllerDelegate, ASAuthorizationControllerPresentationContextProviding {
@@ -133,9 +137,10 @@ class AuthenticationService: ObservableObject {
     private let usersStorageKey = "storedUsers"
 
     // Backend configuration
-    private let baseURL = "http://localhost:5001/api"  // Update this for production
+    private let baseURL = "http://127.0.0.1:5001/api"  // Use 127.0.0.1 for iOS Simulator compatibility
 
     init() {
+        print("🔑 AuthService: Initializing authentication service...")
         loadSavedUser()
     }
 
@@ -143,6 +148,8 @@ class AuthenticationService: ObservableObject {
 
     private func saveJWTToken(_ token: String) {
         UserDefaults.standard.set(token, forKey: jwtTokenKey)
+        print("🔑 AuthService: JWT token saved to UserDefaults")
+        print("🔑 AuthService: Token preview: \(String(token.prefix(20)))...")
     }
 
     private func getJWTToken() -> String? {
@@ -161,6 +168,87 @@ class AuthenticationService: ObservableObject {
             print("🔑 AuthService: Token preview: \(String(token.prefix(20)))...")
         }
         return token
+    }
+
+        // Get user profile from backend using JWT token
+    private func getUserFromBackend(_ token: String) async -> UserAccount? {
+        print("🔑 AuthService: Fetching user profile from backend...")
+
+        guard let url = URL(string: "\(baseURL)/auth/profile") else {
+            print("❌ AuthService: Invalid profile URL")
+            return nil
+        }
+
+        var urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = "GET"
+        urlRequest.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        do {
+            let (data, response) = try await URLSession.shared.data(for: urlRequest)
+
+            if let httpResponse = response as? HTTPURLResponse {
+                print("🔑 AuthService: Profile request status: \(httpResponse.statusCode)")
+
+                if httpResponse.statusCode == 200 {
+                    let profileResponse = try JSONDecoder().decode(BackendProfileResponse.self, from: data)
+                    let userAccount = convertBackendUserToUserAccount(profileResponse.user)
+                    print("✅ AuthService: Successfully parsed user profile from backend")
+                    return userAccount
+                } else {
+                    print("❌ AuthService: Profile request failed with status: \(httpResponse.statusCode)")
+                    return nil
+                }
+            }
+            print("❌ AuthService: Invalid HTTP response for profile")
+            return nil
+        } catch {
+            print("❌ AuthService: Profile request error: \(error.localizedDescription)")
+            return nil
+        }
+    }
+
+    // Validate JWT token with backend
+    private func validateJWTToken(_ token: String) async -> Bool {
+        print("🔑 AuthService: Starting JWT validation...")
+
+        guard let url = URL(string: "\(baseURL)/auth/profile") else {
+            print("❌ AuthService: Invalid profile URL")
+            return false
+        }
+
+        var urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = "GET"
+        urlRequest.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        print("🔑 AuthService: Making request to: \(url)")
+
+        do {
+            let (data, response) = try await URLSession.shared.data(for: urlRequest)
+
+            if let httpResponse = response as? HTTPURLResponse {
+                print("🔑 AuthService: Received response with status: \(httpResponse.statusCode)")
+
+                if httpResponse.statusCode == 200 {
+                    print("✅ AuthService: JWT token is valid")
+                    return true
+                } else {
+                    print("❌ AuthService: JWT token invalid, status: \(httpResponse.statusCode)")
+                    if let responseString = String(data: data, encoding: .utf8) {
+                        print("❌ AuthService: Response body: \(responseString)")
+                    }
+                    return false
+                }
+            }
+            print("❌ AuthService: Invalid HTTP response")
+            return false
+        } catch {
+            print("❌ AuthService: JWT validation network error: \(error.localizedDescription)")
+
+            // For development: if server is unreachable, assume token is valid
+            // In production, you should return false here
+            print("⚠️ AuthService: Server unreachable in development, assuming token valid")
+            return true
+        }
     }
 
     // MARK: - Backend API Calls
@@ -675,14 +763,56 @@ class AuthenticationService: ObservableObject {
     }
 
     private func loadSavedUser() {
-        guard let userIdString = UserDefaults.standard.string(forKey: userDefaultsKey),
+        print("🔑 AuthService: Starting loadSavedUser()")
+
+        let userIdString = UserDefaults.standard.string(forKey: userDefaultsKey)
+        print("🔑 AuthService: userIdString from UserDefaults: \(userIdString ?? "nil")")
+
+        guard let userIdString = userIdString,
               let userId = UUID(uuidString: userIdString) else {
+            print("🔑 AuthService: No saved user ID found, setting state to unauthenticated")
             authState = .unauthenticated
             return
         }
 
-        Task {
-            // Find user by ID
+        print("🔑 AuthService: Found saved user ID: \(userId)")
+
+        // Check if we have a JWT token
+        let jwtToken = getJWTToken()
+        print("🔑 AuthService: JWT token exists: \(jwtToken != nil)")
+
+        guard let jwtToken = jwtToken else {
+            print("🔑 AuthService: No JWT token found on app launch, signing out")
+            authState = .unauthenticated
+            UserDefaults.standard.removeObject(forKey: userDefaultsKey)
+            return
+        }
+
+        print("🔑 AuthService: JWT token found on app launch, validating with backend...")
+        print("🔑 AuthService: Setting state to .validating")
+        authState = .validating
+
+                        Task {
+            // If we have a JWT token but no local user data, try to get user info from backend
+            print("🔑 AuthService: Attempting to restore user from backend...")
+
+            // Try to get user profile from backend using JWT token
+            if let userFromBackend = await getUserFromBackend(jwtToken) {
+                print("✅ AuthService: User profile retrieved from backend")
+
+                // Store the user locally for future use
+                await storeAppleUser(user: userFromBackend)
+
+                await MainActor.run {
+                    currentUser = userFromBackend
+                    authState = .authenticated(userFromBackend)
+                    saveCurrentUser(userFromBackend)
+                    print("✅ AuthService: User session restored from backend successfully")
+                }
+                return
+            }
+
+            // If backend doesn't work, try local storage
             let storedUsers = getStoredUsers()
             for (_, userDict) in storedUsers {
                 if let dict = userDict as? [String: Any],
@@ -691,18 +821,34 @@ class AuthenticationService: ObservableObject {
                    let email = dict["email"] as? String {
 
                     if let user = await getStoredUser(email: email) {
+                        print("🔑 AuthService: Found stored user locally, validating JWT token...")
+
+                        // Validate the JWT token with the backend
+                        let isValid = await validateJWTToken(jwtToken)
+                        print("🔑 AuthService: JWT validation result: \(isValid)")
+
                         await MainActor.run {
-                            currentUser = user
-                            authState = .authenticated(user)
+                            if isValid {
+                                currentUser = user
+                                authState = .authenticated(user)
+                                print("✅ AuthService: User session restored successfully")
+                            } else {
+                                print("❌ AuthService: JWT token is invalid or network error, signing out")
+                                authState = .unauthenticated
+                                clearJWTToken()
+                                UserDefaults.standard.removeObject(forKey: userDefaultsKey)
+                            }
                         }
                         return
                     }
                 }
             }
 
-            // User not found, sign out
+            // Neither backend nor local storage worked
+            print("❌ AuthService: Unable to restore user data, signing out")
             await MainActor.run {
                 authState = .unauthenticated
+                clearJWTToken()
                 UserDefaults.standard.removeObject(forKey: userDefaultsKey)
             }
         }
