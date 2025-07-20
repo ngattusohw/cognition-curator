@@ -153,6 +153,16 @@ class AuthenticationService: ObservableObject {
         UserDefaults.standard.removeObject(forKey: jwtTokenKey)
     }
 
+    // Public method for other services to get JWT token
+    func getCurrentJWTToken() -> String? {
+        let token = getJWTToken()
+        print("🔑 AuthService: getCurrentJWTToken called, token exists: \(token != nil)")
+        if let token = token {
+            print("🔑 AuthService: Token preview: \(String(token.prefix(20)))...")
+        }
+        return token
+    }
+
     // MARK: - Backend API Calls
 
     private func sendAppleSignInToBackend(identityToken: String, authorizationCode: String?, userInfo: AppleUserInfo?) async throws -> BackendAuthResponse {
@@ -416,8 +426,8 @@ class AuthenticationService: ObservableObject {
     private func createSimulatorAppleUser() async {
         // For simulator testing, also hit the backend with demo data
         do {
-            // Create a mock identity token for testing
-            let mockToken = "simulator-test-token-\(Date().timeIntervalSince1970)"
+            // Use a consistent mock identity token for testing (reuse existing user)
+            let mockToken = "simulator-test-token-1705739520"
 
             let userInfo = AppleUserInfo(
                 name: AppleUserName(
@@ -545,10 +555,7 @@ class AuthenticationService: ObservableObject {
         return request
     }
 
-    /// Gets the current JWT token for manual API calls
-    public func getCurrentJWTToken() -> String? {
-        return getJWTToken()
-    }
+
 
     // MARK: - Private Methods
 
