@@ -1,6 +1,4 @@
-"""
-Analytics API Service for syncing with backend analytics system.
-"""
+// Analytics API Service for syncing with backend analytics system.
 
 import Foundation
 import Combine
@@ -89,51 +87,51 @@ struct StudySessionSync: Codable {
 
 class AnalyticsAPIService: ObservableObject {
     static let shared = AnalyticsAPIService()
-    
+
     private let baseURL = "http://localhost:5000/api"  // Update with your server URL
     private var cancellables = Set<AnyCancellable>()
-    
+
     private init() {}
-    
+
     // MARK: - Dashboard Data
-    
+
     func getDashboard(days: Int = 30) -> AnyPublisher<AnalyticsDashboard, Error> {
         guard let url = URL(string: "\(baseURL)/analytics/dashboard?days=\(days)") else {
             return Fail(error: URLError(.badURL))
                 .eraseToAnyPublisher()
         }
-        
+
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         addAuthHeader(to: &request)
-        
+
         return URLSession.shared.dataTaskPublisher(for: request)
             .map(\.data)
             .decode(type: AnalyticsDashboard.self, decoder: JSONDecoder())
             .receive(on: DispatchQueue.main)
             .eraseToAnyPublisher()
     }
-    
+
     // MARK: - Sync Study Session
-    
+
     func syncStudySession(_ session: StudySessionSync) -> AnyPublisher<Bool, Error> {
         guard let url = URL(string: "\(baseURL)/sync/study-session") else {
             return Fail(error: URLError(.badURL))
                 .eraseToAnyPublisher()
         }
-        
+
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         addAuthHeader(to: &request)
-        
+
         do {
             request.httpBody = try JSONEncoder().encode(session)
         } catch {
             return Fail(error: error)
                 .eraseToAnyPublisher()
         }
-        
+
         return URLSession.shared.dataTaskPublisher(for: request)
             .map { _ in true }
             .catch { error in
@@ -144,33 +142,33 @@ class AnalyticsAPIService: ObservableObject {
             .receive(on: DispatchQueue.main)
             .eraseToAnyPublisher()
     }
-    
+
     // MARK: - Sync User Stats
-    
+
     func syncUserStats(streakDays: Int, cardsReviewed: Int, studyTime: Int) -> AnyPublisher<Bool, Error> {
         guard let url = URL(string: "\(baseURL)/sync/user-stats") else {
             return Fail(error: URLError(.badURL))
                 .eraseToAnyPublisher()
         }
-        
+
         let syncData = [
             "current_streak_days": streakDays,
             "total_cards_reviewed": cardsReviewed,
             "total_study_time_minutes": studyTime
         ]
-        
+
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         addAuthHeader(to: &request)
-        
+
         do {
             request.httpBody = try JSONSerialization.data(withJSONObject: syncData)
         } catch {
             return Fail(error: error)
                 .eraseToAnyPublisher()
         }
-        
+
         return URLSession.shared.dataTaskPublisher(for: request)
             .map { _ in true }
             .catch { error in
@@ -181,18 +179,18 @@ class AnalyticsAPIService: ObservableObject {
             .receive(on: DispatchQueue.main)
             .eraseToAnyPublisher()
     }
-    
+
     // MARK: - Helper Methods
-    
+
     private func addAuthHeader(to request: inout URLRequest) {
         // TODO: Add JWT token from AuthenticationService
         // if let token = AuthenticationService.shared.accessToken {
         //     request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         // }
     }
-    
+
     // MARK: - Mock Data for Testing
-    
+
     func getMockDashboard() -> AnalyticsDashboard {
         return AnalyticsDashboard(
             userStats: UserStats(
@@ -279,4 +277,4 @@ class AnalyticsAPIService: ObservableObject {
             ]
         )
     }
-} 
+}
