@@ -13,6 +13,16 @@ struct AnalyticsDashboard: Codable {
     let topDecks: [DeckStatsResponse]
     let weeklySummary: WeeklySummaryResponse
     let insights: [InsightResponse]
+
+    enum CodingKeys: String, CodingKey {
+        case userStats = "user_stats"
+        case cardsDueToday = "cards_due_today"
+        case recentSessions = "recent_sessions"
+        case dailyChartData = "daily_chart_data"
+        case topDecks = "top_decks"
+        case weeklySummary = "weekly_summary"
+        case insights
+    }
 }
 
 struct UserStats: Codable {
@@ -25,6 +35,18 @@ struct UserStats: Codable {
     let studyLevel: Int
     let levelProgress: Double
     let masteryRate: Double
+
+    enum CodingKeys: String, CodingKey {
+        case totalStudyTimeMinutes = "total_study_time_minutes"
+        case currentStreakDays = "current_streak_days"
+        case longestStreakDays = "longest_streak_days"
+        case totalCardsReviewed = "total_cards_reviewed"
+        case totalDecksCreated = "total_decks_created"
+        case overallAccuracyRate = "overall_accuracy_rate"
+        case studyLevel = "study_level"
+        case levelProgress = "level_progress"
+        case masteryRate = "mastery_rate"
+    }
 }
 
 struct StudySessionResponse: Codable {
@@ -36,6 +58,17 @@ struct StudySessionResponse: Codable {
     let sessionQualityScore: Double
     let startedAt: String
     let platform: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case sessionType = "session_type"
+        case durationMinutes = "duration_minutes"
+        case cardsReviewed = "cards_reviewed"
+        case accuracyRate = "accuracy_rate"
+        case sessionQualityScore = "session_quality_score"
+        case startedAt = "started_at"
+        case platform
+    }
 }
 
 struct DayStatsResponse: Codable {
@@ -43,6 +76,13 @@ struct DayStatsResponse: Codable {
     let studyMinutes: Int
     let cardsReviewed: Int
     let accuracyRate: Double
+
+    enum CodingKeys: String, CodingKey {
+        case date
+        case studyMinutes = "study_minutes"
+        case cardsReviewed = "cards_reviewed"
+        case accuracyRate = "accuracy_rate"
+    }
 }
 
 struct DeckStatsResponse: Codable {
@@ -52,6 +92,15 @@ struct DeckStatsResponse: Codable {
     let masteryRate: Double
     let accuracyRate: Double
     let studyTimeMinutes: Int
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case name
+        case totalCards = "total_cards"
+        case masteryRate = "mastery_rate"
+        case accuracyRate = "accuracy_rate"
+        case studyTimeMinutes = "study_time_minutes"
+    }
 }
 
 struct WeeklySummaryResponse: Codable {
@@ -59,6 +108,13 @@ struct WeeklySummaryResponse: Codable {
     let totalCards: Int
     let averageAccuracy: Double
     let sessionCount: Int
+
+    enum CodingKeys: String, CodingKey {
+        case totalMinutes = "total_minutes"
+        case totalCards = "total_cards"
+        case averageAccuracy = "average_accuracy"
+        case sessionCount = "session_count"
+    }
 }
 
 struct InsightResponse: Codable {
@@ -88,7 +144,7 @@ struct StudySessionSync: Codable {
 class AnalyticsAPIService: ObservableObject {
     static let shared = AnalyticsAPIService()
 
-    private let baseURL = "http://localhost:5001/api"  // Update with your server URL
+    private let baseURL = "http://127.0.0.1:5001/api"  // Updated to use 127.0.0.1 for iOS Simulator
     private var cancellables = Set<AnyCancellable>()
 
     private init() {}
@@ -96,18 +152,51 @@ class AnalyticsAPIService: ObservableObject {
     // MARK: - Dashboard Data
 
     func getDashboard(days: Int = 30) -> AnyPublisher<AnalyticsDashboard, Error> {
+        print("🌐 AnalyticsAPIService: Starting getDashboard request")
+
         guard let url = URL(string: "\(baseURL)/analytics/dashboard?days=\(days)") else {
+            print("❌ AnalyticsAPIService: Invalid URL: \(baseURL)/analytics/dashboard?days=\(days)")
             return Fail(error: URLError(.badURL))
                 .eraseToAnyPublisher()
         }
 
+        print("🔗 AnalyticsAPIService: URL created: \(url)")
+
         // Use authenticated request from AuthenticationService
         guard let request = AuthenticationService.shared.createAuthenticatedRequest(url: url, method: "GET") else {
+            print("❌ AnalyticsAPIService: Failed to create authenticated request")
             return Fail(error: URLError(.userAuthenticationRequired))
                 .eraseToAnyPublisher()
         }
 
+        print("🔐 AnalyticsAPIService: Authenticated request created")
+        if let authHeader = request.value(forHTTPHeaderField: "Authorization") {
+            print("🎫 AnalyticsAPIService: Authorization header: \(String(authHeader.prefix(20)))...")
+        }
+
         return URLSession.shared.dataTaskPublisher(for: request)
+            .handleEvents(
+                receiveSubscription: { _ in
+                    print("📡 AnalyticsAPIService: Starting network request...")
+                },
+                receiveOutput: { data, response in
+                    print("📥 AnalyticsAPIService: Received response")
+                    if let httpResponse = response as? HTTPURLResponse {
+                        print("📊 AnalyticsAPIService: Status code: \(httpResponse.statusCode)")
+                    }
+                    print("📦 AnalyticsAPIService: Data size: \(data.count) bytes")
+                    if let responseString = String(data: data, encoding: .utf8) {
+                        print("📄 AnalyticsAPIService: Response preview: \(String(responseString.prefix(200)))...")
+                    }
+                },
+                receiveCompletion: { completion in
+                    if case .failure(let error) = completion {
+                        print("❌ AnalyticsAPIService: Network error: \(error)")
+                    } else {
+                        print("✅ AnalyticsAPIService: Request completed successfully")
+                    }
+                }
+            )
             .map(\.data)
             .decode(type: AnalyticsDashboard.self, decoder: JSONDecoder())
             .receive(on: DispatchQueue.main)

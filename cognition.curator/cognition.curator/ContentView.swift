@@ -11,7 +11,7 @@ struct ContentView: View {
     @State private var selectedTab = 0
     @State private var forceReview = false
     @EnvironmentObject var deepLinkHandler: DeepLinkHandler
-    
+
     var body: some View {
         TabView(selection: $selectedTab) {
             HomeView(selectedTab: $selectedTab, forceReview: $forceReview)
@@ -20,14 +20,14 @@ struct ContentView: View {
                     Text("Home")
                 }
                 .tag(0)
-            
+
             DecksView()
                 .tabItem {
                     Image(systemName: "rectangle.stack.fill")
                     Text("Decks")
                 }
                 .tag(1)
-            
+
             ReviewView(forceReview: $forceReview, selectedTab: $selectedTab)
                 .environmentObject(deepLinkHandler)
                 .tabItem {
@@ -35,8 +35,8 @@ struct ContentView: View {
                     Text("Review")
                 }
                 .tag(2)
-            
-            ProgressStatsView()
+
+            ProgressStatsView(selectedTab: $selectedTab)
                 .tabItem {
                     Image(systemName: "chart.line.uptrend.xyaxis")
                     Text("Progress")
