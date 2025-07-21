@@ -1,6 +1,58 @@
 import SwiftUI
 import UIKit
 
+// MARK: - Expandable Text Component
+
+struct ExpandableText: View {
+    let text: String
+    let lineLimit: Int
+    let font: Font
+    let color: Color
+    @State private var isExpanded = false
+
+    init(text: String, lineLimit: Int = 3, font: Font = .body, color: Color = .primary) {
+        self.text = text
+        self.lineLimit = lineLimit
+        self.font = font
+        self.color = color
+    }
+
+    private var shouldShowExpandButton: Bool {
+        // Simple heuristic: if text has more than a certain number of characters or newlines
+        let characterThreshold = lineLimit * 80 // Approximately 80 chars per line
+        let newlineCount = text.components(separatedBy: .newlines).count - 1
+        return text.count > characterThreshold || newlineCount >= lineLimit
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(text)
+                .font(font)
+                .foregroundColor(color)
+                .lineLimit(isExpanded ? nil : lineLimit)
+                .fixedSize(horizontal: false, vertical: false)
+
+            if shouldShowExpandButton {
+                Button(action: {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        isExpanded.toggle()
+                    }
+                }) {
+                    HStack {
+                        Text(isExpanded ? "Show Less" : "Show More")
+                            .font(.caption)
+                            .fontWeight(.medium)
+
+                        Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                            .font(.caption)
+                    }
+                    .foregroundColor(.blue)
+                }
+            }
+        }
+    }
+}
+
 struct AICardReviewView: View {
     let topic: String
     let deckName: String
@@ -186,8 +238,7 @@ struct AICardReviewView: View {
                     .font(.headline)
                     .fontWeight(.semibold)
 
-                Text(card.answer)
-                    .font(.body)
+                ExpandableText(text: card.answer)
                     .padding(16)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(Color(uiColor: UIColor.systemGray6))
@@ -201,13 +252,16 @@ struct AICardReviewView: View {
                         .font(.headline)
                         .fontWeight(.semibold)
 
-                    Text(explanation)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .padding(12)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Color.blue.opacity(0.05))
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                    ExpandableText(
+                        text: explanation,
+                        lineLimit: 2,
+                        font: .caption,
+                        color: .secondary
+                    )
+                    .padding(12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.blue.opacity(0.05))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
                 }
             }
         }
@@ -390,23 +444,36 @@ struct AICardReviewView: View {
                     }
                     .disabled(currentCardIndex == 0)
 
-                    Button(action: nextCard) {
+                    Button(action: {
+                        if currentCardIndex >= generatedCards.count - 1 {
+                            // On last card, finish and create deck
+                            createDeck()
+                        } else {
+                            // Not on last card, go to next
+                            nextCard()
+                        }
+                    }) {
                         HStack {
-                            Text("Next")
-                            Image(systemName: "chevron.right")
+                            if currentCardIndex >= generatedCards.count - 1 {
+                                Text("Finish")
+                                Image(systemName: "checkmark.circle.fill")
+                            } else {
+                                Text("Next")
+                                Image(systemName: "chevron.right")
+                            }
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
-                        .background(Color.blue)
+                        .background(currentCardIndex >= generatedCards.count - 1 ? Color.green : Color.blue)
                         .foregroundColor(.white)
                         .clipShape(RoundedRectangle(cornerRadius: 8))
                     }
-                    .disabled(currentCardIndex >= generatedCards.count - 1)
                 }
             }
 
-            // Create Deck Button
-            Button(action: createDeck) {
+            // Create Deck Button (only show if we have accepted cards and not on completion screen)
+            if !acceptedCards.isEmpty && currentCard != nil {
+                Button(action: createDeck) {
                 HStack {
                     if isCreatingDeck {
                         ProgressView()
@@ -425,6 +492,7 @@ struct AICardReviewView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 12))
             }
             .disabled(acceptedCards.isEmpty || isCreatingDeck)
+            }
         }
         .padding(.horizontal, 20)
         .padding(.bottom, 20)
@@ -464,18 +532,19 @@ struct AICardReviewView: View {
     private func generateSimilarCards(basedOn card: AIGeneratedCard) {
         Task {
             do {
-                let similarCards = try await AIGenerationService.shared.generateSimilarCards(basedOn: card, count: 2)
+                // Generate just 1 similar card to replace the current one
+                let similarCards = try await AIGenerationService.shared.generateSimilarCards(basedOn: card, count: 1)
 
                 await MainActor.run {
-                    // Insert similar cards after the current card
-                    let insertIndex = currentCardIndex + 1
-                    for (offset, similarCard) in similarCards.enumerated() {
-                        generatedCards.insert(similarCard, at: insertIndex + offset)
+                    if let newCard = similarCards.first {
+                        // Replace the current card with the new similar card
+                        generatedCards[currentCardIndex] = newCard
+                        print("🔄 Replaced card at index \(currentCardIndex) with similar card: \(newCard.question)")
                     }
                 }
             } catch {
                 await MainActor.run {
-                    errorMessage = "Failed to generate similar cards: \(error.localizedDescription)"
+                    errorMessage = "Failed to generate similar card: \(error.localizedDescription)"
                     showingError = true
                 }
             }
