@@ -449,10 +449,16 @@ struct AICardReviewView: View {
     private func deleteCard(_ card: AIGeneratedCard) {
         generatedCards.removeAll { $0.id == card.id }
 
-        // Adjust current index if needed
-        if currentCardIndex >= generatedCards.count && currentCardIndex > 0 {
+        // Auto-advance to next card or adjust index if at end
+        if generatedCards.isEmpty {
+            // No cards left
+            currentCardIndex = 0
+        } else if currentCardIndex >= generatedCards.count {
+            // We were at the last card, go to the new last card
             currentCardIndex = generatedCards.count - 1
         }
+        // If currentCardIndex < generatedCards.count, we automatically show the next card
+        // since the array shifted when we removed the card
     }
 
     private func generateSimilarCards(basedOn card: AIGeneratedCard) {

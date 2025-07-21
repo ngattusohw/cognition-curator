@@ -43,13 +43,13 @@ def create_app(config_name=None):
     jwt = JWTManager(app)
 
     # Register blueprints
+    from src.api.ai import ai_bp
     from src.api.analytics import analytics_bp
     from src.api.auth import auth_bp
     from src.api.decks import decks_bp
     from src.api.flashcards import flashcards_bp
     from src.api.sync import sync_bp
     from src.api.users import users_bp
-    from src.api.ai import ai_bp
 
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
     app.register_blueprint(users_bp, url_prefix="/api/users")
