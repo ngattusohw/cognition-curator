@@ -61,14 +61,18 @@ async def generate_flashcards():
                 "confidence": card.confidence
             })
 
+        # Calculate average confidence
+        confidence_avg = sum(card.confidence for card in ai_response.cards) / len(ai_response.cards) if ai_response.cards else 0.0
+
         response = {
             "cards": cards,
             "topic": topic,
             "total_generated": len(cards),
             "difficulty": difficulty,
             "focus": focus,
-            "ai_metadata": ai_response.metadata,
-            "provider_info": ai_manager.get_provider_info()
+            "generation_time": 2.5,  # Placeholder since Claude doesn't provide this directly
+            "model_version": ai_response.metadata.get("model", "unknown"),
+            "confidence_avg": confidence_avg
         }
 
         logger.info(f"Successfully generated {len(cards)} cards using {ai_response.metadata.get('provider', 'unknown')} provider")
@@ -157,14 +161,18 @@ async def generate_answer():
         logger.info(f"Generating answer for question about {deck_topic or 'general topic'}")
         answer_data = await ai_manager.generate_answer(question, context, deck_topic)
 
+        # Get provider info for metadata
+        provider_info = ai_manager.get_provider_info()
+
         response = {
             "answer": answer_data["answer"],
             "explanation": answer_data.get("explanation"),
             "confidence": answer_data.get("confidence", 0.85),
             "sources": answer_data.get("sources", []),
             "difficulty": difficulty,
-            "suggested_tags": answer_data.get("suggested_tags", []),
-            "provider_info": ai_manager.get_provider_info()
+            "generation_time": 2.0,  # Placeholder since Claude doesn't provide this
+            "model_version": provider_info.get("model", "unknown"),
+            "suggested_tags": answer_data.get("suggested_tags", [])
         }
 
         logger.info(f"Successfully generated answer using {ai_manager.get_provider_info().get('provider', 'unknown')} provider")

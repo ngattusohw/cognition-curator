@@ -161,7 +161,9 @@ Provide a comprehensive answer that:
 3. Includes relevant details an expert would know
 4. Avoids generic or vague responses
 
-Keep your answer focused and informative. Aim for under 1 sentence, it needs to be SUPER concise and to the point."""
+Keep your answer focused and informative.
+Just a couple of words, it needs to be SUPER concise and to the point. Do not repeat the question in your answer OR ELSE.
+Do not mention the subject area in your answer EVER!!!."""
 
         try:
             loop = asyncio.get_event_loop()

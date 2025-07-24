@@ -406,69 +406,16 @@ class AIGenerationService: ObservableObject {
         deckTopic: String?
     ) -> AIAnswerResponse {
 
-        let questionLower = question.lowercased()
-
-        var answer = ""
-        var explanation = ""
-        var suggestedTags: [String] = []
-
-        // Generate context-aware fallback answers
-        if let topic = deckTopic?.lowercased() {
-            if topic.contains("fuel") && topic.contains("system") {
-                // Fuel system specific fallback
-                if questionLower.contains("pump") {
-                    answer = "A fuel pump is a mechanical or electrical device that moves fuel from the tank to the engine, creating the necessary pressure for proper fuel delivery."
-                    explanation = "Modern vehicles use electric fuel pumps for better efficiency and control."
-                    suggestedTags = ["pump", "component", "automotive"]
-                } else if questionLower.contains("injector") {
-                    answer = "A fuel injector is a precision valve that sprays atomized fuel into the engine's intake or combustion chamber at precisely controlled intervals."
-                    explanation = "Fuel injectors provide much more accurate fuel delivery compared to carburetors."
-                    suggestedTags = ["injector", "precision", "fuel-delivery"]
-                } else if questionLower.contains("filter") {
-                    answer = "A fuel filter is a component that removes contaminants and impurities from fuel before it reaches the engine components."
-                    explanation = "Clean fuel is essential for optimal engine performance and longevity of fuel system components."
-                    suggestedTags = ["filter", "maintenance", "contamination"]
-                } else {
-                    answer = "This relates to automotive fuel system components and their operation, involving the storage, delivery, and injection of fuel for engine combustion."
-                    explanation = "Fuel systems are critical for vehicle operation and performance."
-                    suggestedTags = ["fuel-system", "automotive", "general"]
-                }
-            } else {
-                // Generic topic-based answer
-                answer = "This concept relates to \(topic) and involves key principles and applications within this field."
-                explanation = "Understanding this concept is important for mastering \(topic)."
-                suggestedTags = [topic.replacingOccurrences(of: " ", with: "-"), "concept"]
-            }
-        } else {
-            // Generic fallback answer
-            if questionLower.contains("what is") || questionLower.contains("define") {
-                answer = "This is a fundamental concept that encompasses key principles and applications in its respective field."
-                explanation = "Understanding this definition is essential for grasping related concepts."
-                suggestedTags = ["definition", "concept"]
-            } else if questionLower.contains("how") {
-                answer = "This process involves a series of steps and mechanisms that work together to achieve the desired outcome."
-                explanation = "Understanding the process helps in applying the concept effectively."
-                suggestedTags = ["process", "mechanism"]
-            } else if questionLower.contains("why") {
-                answer = "This is important because it provides essential functionality and benefits in its application domain."
-                explanation = "Understanding the importance helps in appreciating the value of this concept."
-                suggestedTags = ["importance", "purpose"]
-            } else {
-                answer = "This relates to fundamental principles and concepts that are essential for understanding the subject matter."
-                explanation = "This answer provides a general overview of the topic."
-                suggestedTags = ["general", "overview"]
-            }
-        }
-
+        // Simple fallback message instead of fake data
         return AIAnswerResponse(
-            answer: answer,
-            explanation: explanation,
-            confidence: Double.random(in: 0.75...0.88),
+            answer: "Answer generation failed. Please check your internet connection and try again.",
+            explanation: "AI answer generation is currently unavailable.",
+            confidence: 0.0,
             sources: [],
             difficulty: difficulty.rawValue,
-            generationTime: Double.random(in: 0.8...2.1),
-            modelVersion: "fallback-v1.0",
-            suggestedTags: suggestedTags
+            generationTime: 0.0,
+            modelVersion: "fallback",
+            suggestedTags: ["error"]
         )
     }
 
