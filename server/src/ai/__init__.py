@@ -1,0 +1,1 @@
+# AI Module for Cognition Curator
