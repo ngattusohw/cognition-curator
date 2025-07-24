@@ -216,9 +216,18 @@ struct AddCardView: View {
                         .fontWeight(.medium)
                         .foregroundColor(.secondary)
 
-                    Text(question.isEmpty ? "Your question will appear here" : question)
-                        .font(.subheadline)
-                        .foregroundColor(question.isEmpty ? .secondary : .primary)
+                    if question.isEmpty {
+                        Text("Your question will appear here")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    } else {
+                        ExpandableText(
+                            text: question,
+                            lineLimit: 3,
+                            font: .subheadline,
+                            color: .primary
+                        )
+                    }
                 }
 
                 Divider()
@@ -229,9 +238,18 @@ struct AddCardView: View {
                         .fontWeight(.medium)
                         .foregroundColor(.secondary)
 
-                    Text(answer.isEmpty ? "Your answer will appear here" : answer)
-                        .font(.subheadline)
-                        .foregroundColor(answer.isEmpty ? .secondary : .primary)
+                    if answer.isEmpty {
+                        Text("Your answer will appear here")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    } else {
+                        ExpandableText(
+                            text: answer,
+                            lineLimit: 3,
+                            font: .subheadline,
+                            color: .primary
+                        )
+                    }
                 }
             }
             .padding(16)

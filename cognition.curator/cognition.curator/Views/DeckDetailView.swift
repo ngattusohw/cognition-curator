@@ -237,100 +237,6 @@ struct DeckDetailView: View {
         return Double(getReviewedCount()) / Double(totalCards)
     }
 
-struct StatItem: View {
-    let title: String
-    let value: String
-    let icon: String
-    let color: Color
-
-    var body: some View {
-        VStack(spacing: 8) {
-            Image(systemName: icon)
-                .font(.title2)
-                .foregroundColor(color)
-
-            Text(value)
-                .font(.title2)
-                .fontWeight(.bold)
-                .foregroundColor(.primary)
-
-            Text(title)
-                .font(.caption)
-                .foregroundColor(.secondary)
-        }
-        .frame(maxWidth: .infinity)
-    }
-}
-
-struct CardRowView: View {
-    let card: Flashcard
-    @State private var showingAnswer = false
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Question")
-                        .font(.caption)
-                        .fontWeight(.medium)
-                        .foregroundColor(.secondary)
-
-                    Text(card.question ?? "No question")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                        .lineLimit(2)
-                }
-
-                Spacer()
-
-                Button(action: {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        showingAnswer.toggle()
-                    }
-                }) {
-                    Image(systemName: showingAnswer ? "eye.slash" : "eye")
-                        .font(.caption)
-                        .foregroundColor(.blue)
-                }
-            }
-
-            if showingAnswer {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Answer")
-                        .font(.caption)
-                        .fontWeight(.medium)
-                        .foregroundColor(.secondary)
-
-                    Text(card.answer ?? "No answer")
-                        .font(.subheadline)
-                        .foregroundColor(.primary)
-                }
-                .transition(.opacity.combined(with: .move(edge: .top)))
-            }
-
-            // Card stats
-            HStack {
-                let stats = SpacedRepetitionService.shared.calculateReviewStats(for: card)
-
-                Text("\(stats.totalReviews) reviews")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-
-                Spacer()
-
-                if stats.totalReviews > 0 {
-                    Text("\(Int(stats.accuracy * 100))% accuracy")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-            }
-        }
-        .padding(16)
-        .background(Color(uiColor: UIColor.systemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
-    }
-
     // MARK: - Actions
 
     private func deleteDeck() async {
@@ -369,6 +275,106 @@ struct CardRowView: View {
                 showingError = true
             }
         }
+    }
+}
+
+struct StatItem: View {
+    let title: String
+    let value: String
+    let icon: String
+    let color: Color
+
+    var body: some View {
+        VStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.title2)
+                .foregroundColor(color)
+
+            Text(value)
+                .font(.title2)
+                .fontWeight(.bold)
+                .foregroundColor(.primary)
+
+            Text(title)
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+    }
+}
+
+struct CardRowView: View {
+    let card: Flashcard
+    @State private var showingAnswer = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Question")
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .foregroundColor(.secondary)
+
+                    ExpandableText(
+                        text: card.question ?? "No question",
+                        lineLimit: 2,
+                        font: .subheadline,
+                        color: .primary
+                    )
+                }
+
+                Spacer()
+
+                Button(action: {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        showingAnswer.toggle()
+                    }
+                }) {
+                    Image(systemName: showingAnswer ? "eye.slash" : "eye")
+                        .font(.caption)
+                        .foregroundColor(.blue)
+                }
+            }
+
+            if showingAnswer {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Answer")
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .foregroundColor(.secondary)
+
+                    ExpandableText(
+                        text: card.answer ?? "No answer",
+                        lineLimit: 3,
+                        font: .subheadline,
+                        color: .primary
+                    )
+                }
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+
+            // Card stats
+            HStack {
+                let stats = SpacedRepetitionService.shared.calculateReviewStats(for: card)
+
+                Text("\(stats.totalReviews) reviews")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+
+                Spacer()
+
+                if stats.totalReviews > 0 {
+                    Text("\(Int(stats.accuracy * 100))% accuracy")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+        }
+        .padding(16)
+        .background(Color(uiColor: UIColor.systemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
     }
 }
 

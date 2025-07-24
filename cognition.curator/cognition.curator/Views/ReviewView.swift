@@ -228,15 +228,17 @@ struct ReviewView: View {
                             .background(Color(uiColor: UIColor.systemGray6))
                             .clipShape(Capsule())
 
-                        Text(showingAnswer ?
-                             cardsToReview[currentCardIndex].answer ?? "No answer" :
-                                cardsToReview[currentCardIndex].question ?? "No question")
-                            .font(.title2)
-                            .fontWeight(.medium)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 20)
-                            .opacity(isFlipping ? 0 : 1)
-                            .animation(.easeInOut(duration: 0.2), value: isFlipping)
+                        ExpandableText(
+                            text: showingAnswer ?
+                                cardsToReview[currentCardIndex].answer ?? "No answer" :
+                                cardsToReview[currentCardIndex].question ?? "No question",
+                            lineLimit: 4,
+                            font: .title2,
+                            color: .primary
+                        )
+                        .padding(.horizontal, 20)
+                        .opacity(isFlipping ? 0 : 1)
+                        .animation(.easeInOut(duration: 0.2), value: isFlipping)
                     }
 
                     // Tap instruction

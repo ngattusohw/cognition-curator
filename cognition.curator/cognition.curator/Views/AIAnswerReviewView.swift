@@ -87,12 +87,16 @@ struct AIAnswerReviewView: View {
                 .font(.headline)
                 .fontWeight(.semibold)
 
-            Text(question)
-                .font(.body)
-                .padding(16)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color(uiColor: UIColor.systemGray6))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+            ExpandableText(
+                text: question,
+                lineLimit: 3,
+                font: .body,
+                color: .primary
+            )
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color(uiColor: UIColor.systemGray6))
+            .clipShape(RoundedRectangle(cornerRadius: 12))
         }
         .padding(20)
         .background(Color(uiColor: UIColor.systemBackground))
@@ -134,16 +138,20 @@ struct AIAnswerReviewView: View {
                 }
             } else {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text(editedAnswer)
-                        .font(.body)
-                        .padding(16)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Color.purple.opacity(0.05))
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color.purple.opacity(0.3), lineWidth: 1)
-                        )
+                    ExpandableText(
+                        text: editedAnswer,
+                        lineLimit: 4,
+                        font: .body,
+                        color: .primary
+                    )
+                    .padding(16)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.purple.opacity(0.05))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.purple.opacity(0.3), lineWidth: 1)
+                    )
 
                     if let explanation = aiAnswer.explanation, !explanation.isEmpty {
                         VStack(alignment: .leading, spacing: 4) {
@@ -152,12 +160,15 @@ struct AIAnswerReviewView: View {
                                 .fontWeight(.semibold)
                                 .foregroundColor(.secondary)
 
-                            Text(explanation)
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                                .padding(8)
-                                .background(Color.blue.opacity(0.05))
-                                .clipShape(RoundedRectangle(cornerRadius: 6))
+                            ExpandableText(
+                                text: explanation,
+                                lineLimit: 2,
+                                font: .caption,
+                                color: .secondary
+                            )
+                            .padding(8)
+                            .background(Color.blue.opacity(0.05))
+                            .clipShape(RoundedRectangle(cornerRadius: 6))
                         }
                     }
                 }

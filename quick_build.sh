@@ -27,4 +27,4 @@ else
     echo "🔍 Running detailed build to show errors..."
     xcodebuild -project "$PROJECT_PATH" -scheme "$SCHEME" -destination generic/platform=iOS build
     exit 1
-fi 
+fi
