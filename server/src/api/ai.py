@@ -1,7 +1,8 @@
 import asyncio
 import logging
+from typing import Any, Dict, List
+
 from flask import Blueprint, jsonify, request
-from typing import List, Dict, Any
 
 from ..ai.manager import ai_manager
 from ..ai.providers.base import AIGenerationRequest, FlashcardData
@@ -42,27 +43,35 @@ async def generate_flashcards():
             number_of_cards=number_of_cards,
             difficulty=difficulty,
             focus=focus,
-            card_type=card_type
+            card_type=card_type,
         )
 
         # Generate cards using real AI
-        logger.info(f"Generating {number_of_cards} {difficulty} flashcards for topic: {topic}")
+        logger.info(
+            f"Generating {number_of_cards} {difficulty} flashcards for topic: {topic}"
+        )
         ai_response = await ai_manager.generate_flashcards(ai_request)
 
         # Convert to API response format
         cards = []
         for card in ai_response.cards:
-            cards.append({
-                "question": card.question,
-                "answer": card.answer,
-                "explanation": card.explanation,
-                "difficulty": card.difficulty,
-                "tags": card.tags,
-                "confidence": card.confidence
-            })
+            cards.append(
+                {
+                    "question": card.question,
+                    "answer": card.answer,
+                    "explanation": card.explanation,
+                    "difficulty": card.difficulty,
+                    "tags": card.tags,
+                    "confidence": card.confidence,
+                }
+            )
 
         # Calculate average confidence
-        confidence_avg = sum(card.confidence for card in ai_response.cards) / len(ai_response.cards) if ai_response.cards else 0.0
+        confidence_avg = (
+            sum(card.confidence for card in ai_response.cards) / len(ai_response.cards)
+            if ai_response.cards
+            else 0.0
+        )
 
         response = {
             "cards": cards,
@@ -72,10 +81,12 @@ async def generate_flashcards():
             "focus": focus,
             "generation_time": 2.5,  # Placeholder since Claude doesn't provide this directly
             "model_version": ai_response.metadata.get("model", "unknown"),
-            "confidence_avg": confidence_avg
+            "confidence_avg": confidence_avg,
         }
 
-        logger.info(f"Successfully generated {len(cards)} cards using {ai_response.metadata.get('provider', 'unknown')} provider")
+        logger.info(
+            f"Successfully generated {len(cards)} cards using {ai_response.metadata.get('provider', 'unknown')} provider"
+        )
         return jsonify(response), 200
 
     except Exception as e:
@@ -106,7 +117,7 @@ async def generate_similar_cards():
             explanation=base_card_data.get("explanation", ""),
             difficulty=base_card_data.get("difficulty", "medium"),
             tags=base_card_data.get("tags", []),
-            confidence=base_card_data.get("confidence", 0.8)
+            confidence=base_card_data.get("confidence", 0.8),
         )
 
         # Generate similar cards (currently only 1 at a time for better quality)
@@ -114,21 +125,25 @@ async def generate_similar_cards():
         similar_card = await ai_manager.generate_similar_card(base_card, topic)
 
         # Convert to API response format
-        similar_cards = [{
-            "question": similar_card.question,
-            "answer": similar_card.answer,
-            "explanation": similar_card.explanation,
-            "difficulty": similar_card.difficulty,
-            "tags": similar_card.tags,
-            "confidence": similar_card.confidence
-        }]
+        similar_cards = [
+            {
+                "question": similar_card.question,
+                "answer": similar_card.answer,
+                "explanation": similar_card.explanation,
+                "difficulty": similar_card.difficulty,
+                "tags": similar_card.tags,
+                "confidence": similar_card.confidence,
+            }
+        ]
 
         response = {
             "similar_cards": similar_cards,
-            "provider_info": ai_manager.get_provider_info()
+            "provider_info": ai_manager.get_provider_info(),
         }
 
-        logger.info(f"Successfully generated similar card using {ai_manager.get_provider_info().get('provider', 'unknown')} provider")
+        logger.info(
+            f"Successfully generated similar card using {ai_manager.get_provider_info().get('provider', 'unknown')} provider"
+        )
         return jsonify(response), 200
 
     except Exception as e:
@@ -158,7 +173,9 @@ async def generate_answer():
             return jsonify({"error": "Difficulty must be easy, medium, or hard"}), 400
 
         # Generate answer using real AI
-        logger.info(f"Generating answer for question about {deck_topic or 'general topic'}")
+        logger.info(
+            f"Generating answer for question about {deck_topic or 'general topic'}"
+        )
         answer_data = await ai_manager.generate_answer(question, context, deck_topic)
 
         # Get provider info for metadata
@@ -172,10 +189,12 @@ async def generate_answer():
             "difficulty": difficulty,
             "generation_time": 2.0,  # Placeholder since Claude doesn't provide this
             "model_version": provider_info.get("model", "unknown"),
-            "suggested_tags": answer_data.get("suggested_tags", [])
+            "suggested_tags": answer_data.get("suggested_tags", []),
         }
 
-        logger.info(f"Successfully generated answer using {ai_manager.get_provider_info().get('provider', 'unknown')} provider")
+        logger.info(
+            f"Successfully generated answer using {ai_manager.get_provider_info().get('provider', 'unknown')} provider"
+        )
         return jsonify(response), 200
 
     except Exception as e:
@@ -206,18 +225,20 @@ async def enhance_card():
             enhancement_data = await ai_manager.generate_answer(
                 f"Provide a detailed explanation for this flashcard question: {question}",
                 context=f"This is for a flashcard about {topic}",
-                deck_topic=topic
+                deck_topic=topic,
             )
 
             enhanced_card = original_card.copy()
             enhanced_card["explanation"] = enhancement_data["answer"]
-            enhanced_card["confidence"] = min(0.98, enhanced_card.get("confidence", 0.8) + 0.1)
+            enhanced_card["confidence"] = min(
+                0.98, enhanced_card.get("confidence", 0.8) + 0.1
+            )
         else:
             enhanced_card = original_card
 
         response = {
             "enhanced_card": enhanced_card,
-            "provider_info": ai_manager.get_provider_info()
+            "provider_info": ai_manager.get_provider_info(),
         }
 
         return jsonify(response), 200
@@ -274,7 +295,7 @@ def get_topic_suggestions():
             "Cell Biology",
             "World War II",
             "Calculus Derivatives",
-            "Photography Basics"
+            "Photography Basics",
         ],
         "categories": {
             "Programming": [
@@ -285,7 +306,7 @@ def get_topic_suggestions():
                 "SQL Queries",
                 "Git & Version Control",
                 "API Design",
-                "Data Structures"
+                "Data Structures",
             ],
             "Culinary Arts": [
                 "Cooking Fundamentals",
@@ -293,21 +314,21 @@ def get_topic_suggestions():
                 "Food Safety",
                 "Knife Skills",
                 "French Cuisine",
-                "Pastry Making"
+                "Pastry Making",
             ],
             "Strategy & Games": [
                 "Chess Strategy",
                 "Chess Tactics",
                 "Poker Strategy",
                 "Go (Weiqi)",
-                "Strategic Thinking"
+                "Strategic Thinking",
             ],
             "Language Learning": [
                 "Spanish Verbs",
                 "French Vocabulary",
                 "German Grammar",
                 "Japanese Hiragana",
-                "Italian Pronunciation"
+                "Italian Pronunciation",
             ],
             "Science": [
                 "Cell Biology",
@@ -315,30 +336,30 @@ def get_topic_suggestions():
                 "Physics Mechanics",
                 "Organic Chemistry",
                 "Astronomy",
-                "Genetics"
+                "Genetics",
             ],
             "History": [
                 "World War II",
                 "Ancient Rome",
                 "American Revolution",
                 "Medieval Europe",
-                "Cold War"
+                "Cold War",
             ],
             "Mathematics": [
                 "Calculus Derivatives",
                 "Linear Algebra",
                 "Statistics",
                 "Geometry Theorems",
-                "Number Theory"
+                "Number Theory",
             ],
             "Arts & Creative": [
                 "Photography Basics",
                 "Art History",
                 "Music Theory",
                 "Drawing Techniques",
-                "Color Theory"
-            ]
-        }
+                "Color Theory",
+            ],
+        },
     }
 
     return jsonify(suggestions), 200
@@ -347,6 +368,7 @@ def get_topic_suggestions():
 # Helper function to make the blueprint async-compatible
 def make_async_endpoint(f):
     """Convert async function to work with Flask"""
+
     def wrapper(*args, **kwargs):
         try:
             loop = asyncio.new_event_loop()
@@ -354,11 +376,14 @@ def make_async_endpoint(f):
             return loop.run_until_complete(f(*args, **kwargs))
         finally:
             loop.close()
+
     return wrapper
 
 
 # Apply async wrapper to async endpoints
-ai_bp.view_functions['generate_flashcards'] = make_async_endpoint(generate_flashcards)
-ai_bp.view_functions['generate_similar_cards'] = make_async_endpoint(generate_similar_cards)
-ai_bp.view_functions['generate_answer'] = make_async_endpoint(generate_answer)
-ai_bp.view_functions['enhance_card'] = make_async_endpoint(enhance_card)
+ai_bp.view_functions["generate_flashcards"] = make_async_endpoint(generate_flashcards)
+ai_bp.view_functions["generate_similar_cards"] = make_async_endpoint(
+    generate_similar_cards
+)
+ai_bp.view_functions["generate_answer"] = make_async_endpoint(generate_answer)
+ai_bp.view_functions["enhance_card"] = make_async_endpoint(enhance_card)

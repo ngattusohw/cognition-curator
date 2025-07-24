@@ -1,10 +1,11 @@
+import asyncio
 import json
 import logging
-from typing import List, Dict, Any, Optional
-import asyncio
+from typing import Any, Dict, List, Optional
+
 from anthropic import Anthropic
 
-from .base import AIProvider, FlashcardData, AIGenerationRequest, AIResponse
+from .base import AIGenerationRequest, AIProvider, AIResponse, FlashcardData
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +31,7 @@ class ClaudeProvider(AIProvider):
             "name": self.name,
             "model": self._model,
             "provider": "Anthropic",
-            "max_tokens": str(self.max_tokens)
+            "max_tokens": str(self.max_tokens),
         }
 
     async def generate_flashcards(self, request: AIGenerationRequest) -> AIResponse:
@@ -47,20 +48,23 @@ class ClaudeProvider(AIProvider):
                     model=self._model,
                     max_tokens=self.max_tokens,
                     temperature=0.7,
-                    messages=[{"role": "user", "content": prompt}]
-                )
+                    messages=[{"role": "user", "content": prompt}],
+                ),
             )
 
-            cards_data = self._parse_flashcard_response(response.content[0].text, request)
+            cards_data = self._parse_flashcard_response(
+                response.content[0].text, request
+            )
 
             metadata = {
                 "model": self._model,
                 "provider": self.name,
-                "tokens_used": response.usage.input_tokens + response.usage.output_tokens,
+                "tokens_used": response.usage.input_tokens
+                + response.usage.output_tokens,
                 "input_tokens": response.usage.input_tokens,
                 "output_tokens": response.usage.output_tokens,
                 "generation_time": None,  # Claude doesn't provide this directly
-                "prompt_length": len(prompt)
+                "prompt_length": len(prompt),
             }
 
             return AIResponse(cards=cards_data, metadata=metadata)
@@ -70,7 +74,9 @@ class ClaudeProvider(AIProvider):
             # Fallback to ensure we don't break the app
             return self._create_fallback_response(request)
 
-    async def generate_similar_card(self, base_card: FlashcardData, topic: str) -> FlashcardData:
+    async def generate_similar_card(
+        self, base_card: FlashcardData, topic: str
+    ) -> FlashcardData:
         """Generate a similar card based on an existing card"""
 
         prompt = f"""Generate ONE similar flashcard based on this example:
@@ -87,11 +93,13 @@ Create a NEW flashcard that:
 3. Uses a different angle or approach
 4. Is NOT a variation of the same question
 
+**Keep content CONCISE - flashcards should be brief and focused.**
+
 Respond with ONLY this JSON format:
 {{
-    "question": "Your new question here",
-    "answer": "Detailed answer",
-    "explanation": "Why this is important or how it relates",
+    "question": "Your new question here (keep short)",
+    "answer": "Brief, direct answer (1 sentence max)",
+    "explanation": "Short note on importance (1 sentence)",
     "confidence": 0.85
 }}"""
 
@@ -103,8 +111,8 @@ Respond with ONLY this JSON format:
                     model=self._model,
                     max_tokens=1000,
                     temperature=0.8,
-                    messages=[{"role": "user", "content": prompt}]
-                )
+                    messages=[{"role": "user", "content": prompt}],
+                ),
             )
 
             response_text = response.content[0].text.strip()
@@ -128,7 +136,7 @@ Respond with ONLY this JSON format:
                 explanation=card_data["explanation"],
                 difficulty=base_card.difficulty,
                 tags=base_card.tags + ["ai-similar"],
-                confidence=card_data.get("confidence", 0.85)
+                confidence=card_data.get("confidence", 0.85),
             )
 
         except Exception as e:
@@ -140,10 +148,12 @@ Respond with ONLY this JSON format:
                 explanation="This card was generated as a fallback when AI generation failed.",
                 difficulty=base_card.difficulty,
                 tags=base_card.tags + ["fallback"],
-                confidence=0.6
+                confidence=0.6,
             )
 
-    async def generate_answer(self, question: str, context: str = "", deck_topic: str = "") -> Dict[str, Any]:
+    async def generate_answer(
+        self, question: str, context: str = "", deck_topic: str = ""
+    ) -> Dict[str, Any]:
         """Generate an AI answer for a given question"""
 
         print(f"Generating answer for question: {question}")
@@ -173,8 +183,8 @@ Do not mention the subject area in your answer EVER!!!."""
                     model=self._model,
                     max_tokens=800,
                     temperature=0.6,
-                    messages=[{"role": "user", "content": prompt}]
-                )
+                    messages=[{"role": "user", "content": prompt}],
+                ),
             )
 
             answer = response.content[0].text.strip()
@@ -185,7 +195,10 @@ Do not mention the subject area in your answer EVER!!!."""
                 "explanation": f"Generated using {self.name} for {deck_topic or 'general knowledge'}",
                 "confidence": 0.88,
                 "sources": [],
-                "suggested_tags": [deck_topic.lower() if deck_topic else "general", "ai-generated"]
+                "suggested_tags": [
+                    deck_topic.lower() if deck_topic else "general",
+                    "ai-generated",
+                ],
             }
 
         except Exception as e:
@@ -195,7 +208,7 @@ Do not mention the subject area in your answer EVER!!!."""
                 "explanation": "This is a fallback response when AI generation fails.",
                 "confidence": 0.1,
                 "sources": [],
-                "suggested_tags": ["error", "fallback"]
+                "suggested_tags": ["error", "fallback"],
             }
 
     def _build_flashcard_prompt(self, request: AIGenerationRequest) -> str:
@@ -204,17 +217,32 @@ Do not mention the subject area in your answer EVER!!!."""
         difficulty_guidance = {
             "easy": "basic concepts, definitions, and fundamental facts",
             "medium": "practical applications, relationships between concepts, and analytical thinking",
-            "hard": "complex analysis, synthesis of multiple concepts, and expert-level insights"
+            "hard": "complex analysis, synthesis of multiple concepts, and expert-level insights",
         }
 
         # Detect topic type for specialized prompts
         topic_lower = request.topic.lower()
 
-        if any(tech in topic_lower for tech in ["programming", "javascript", "typescript", "python", "coding", "software"]):
+        if any(
+            tech in topic_lower
+            for tech in [
+                "programming",
+                "javascript",
+                "typescript",
+                "python",
+                "coding",
+                "software",
+            ]
+        ):
             prompt_type = "programming"
-        elif any(culinary in topic_lower for culinary in ["cooking", "culinary", "chef", "food", "baking"]):
+        elif any(
+            culinary in topic_lower
+            for culinary in ["cooking", "culinary", "chef", "food", "baking"]
+        ):
             prompt_type = "culinary"
-        elif any(strategy in topic_lower for strategy in ["chess", "strategy", "tactics"]):
+        elif any(
+            strategy in topic_lower for strategy in ["chess", "strategy", "tactics"]
+        ):
             prompt_type = "strategy"
         else:
             prompt_type = "general"
@@ -229,13 +257,15 @@ Do not mention the subject area in your answer EVER!!!."""
 - Answers should be accurate and practical
 - NO generic questions like "What is {request.topic}?" or "What are the benefits of..."
 
+**CRITICAL: Keep content CONCISE and SUCCINCT. Avoid verbose explanations.**
+
 **Card Format:**
 Return ONLY a JSON array with this exact structure:
 [
     {{
-        "question": "Specific, testable question",
-        "answer": "Clear, accurate answer (2-4 sentences)",
-        "explanation": "Why this matters or how it connects to broader concepts",
+        "question": "Specific, testable question (keep short)",
+        "answer": "Brief, direct answer (1 concise sentence max)",
+        "explanation": "Short note on why this matters (1 sentence)",
         "difficulty": "{request.difficulty}",
         "tags": ["relevant", "topic", "tags"],
         "confidence": 0.85
@@ -244,7 +274,9 @@ Return ONLY a JSON array with this exact structure:
 
 {self._get_topic_specific_guidance(prompt_type, request.topic)}
 
-Generate exactly {request.number_of_cards} cards that an expert in {request.topic} would find valuable."""
+Generate exactly {request.number_of_cards} cards that an expert in {request.topic} would find valuable.
+
+**REMEMBER: Be concise, direct, and avoid wordiness. Flashcards should be quick to read and review.**"""
 
         return base_prompt
 
@@ -254,7 +286,7 @@ Generate exactly {request.number_of_cards} cards that an expert in {request.topi
             "programming": "practical coding concepts, syntax, best practices, and real-world applications",
             "culinary": "techniques, temperatures, timing, ingredients, and professional kitchen knowledge",
             "strategy": "tactics, principles, decision-making, and strategic thinking",
-            "general": "practical knowledge, expert insights, and actionable information"
+            "general": "practical knowledge, expert insights, and actionable information",
         }
         return focus_map.get(prompt_type, focus_map["general"])
 
@@ -297,7 +329,9 @@ Generate exactly {request.number_of_cards} cards that an expert in {request.topi
 - Common misconceptions and expert corrections
 - Advanced concepts that separate novices from experts"""
 
-    def _parse_flashcard_response(self, response_text: str, request: AIGenerationRequest) -> List[FlashcardData]:
+    def _parse_flashcard_response(
+        self, response_text: str, request: AIGenerationRequest
+    ) -> List[FlashcardData]:
         """Parse Claude's response into FlashcardData objects"""
 
         try:
@@ -325,7 +359,7 @@ Generate exactly {request.number_of_cards} cards that an expert in {request.topi
                     explanation=card_data.get("explanation", ""),
                     difficulty=card_data.get("difficulty", request.difficulty),
                     tags=card_data.get("tags", [request.topic.lower(), "ai-generated"]),
-                    confidence=card_data.get("confidence", 0.85)
+                    confidence=card_data.get("confidence", 0.85),
                 )
                 cards.append(card)
 
@@ -343,11 +377,13 @@ Generate exactly {request.number_of_cards} cards that an expert in {request.topi
             "model": "fallback",
             "provider": "fallback",
             "tokens_used": 0,
-            "error": "AI generation failed, using fallback"
+            "error": "AI generation failed, using fallback",
         }
         return AIResponse(cards=cards, metadata=metadata)
 
-    def _create_fallback_cards(self, request: AIGenerationRequest) -> List[FlashcardData]:
+    def _create_fallback_cards(
+        self, request: AIGenerationRequest
+    ) -> List[FlashcardData]:
         """Create basic fallback cards when AI fails"""
         return [
             FlashcardData(
@@ -356,7 +392,7 @@ Generate exactly {request.number_of_cards} cards that an expert in {request.topi
                 explanation="This card was generated as a fallback when AI generation failed.",
                 difficulty=request.difficulty,
                 tags=[request.topic.lower(), "fallback"],
-                confidence=0.3
+                confidence=0.3,
             )
             for _ in range(min(request.number_of_cards, 3))  # Limit fallback cards
         ]

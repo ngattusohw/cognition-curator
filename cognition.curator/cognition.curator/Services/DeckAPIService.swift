@@ -139,6 +139,38 @@ class DeckAPIService: ObservableObject {
             throw DeckAPIError.networkError("Network error: \(error.localizedDescription)")
         }
     }
+
+    func deleteDeck(id: String) async throws {
+        guard let jwtToken = authService.getCurrentJWTToken() else {
+            throw DeckAPIError.notAuthenticated
+        }
+
+        guard let url = URL(string: "\(baseURL)/decks/\(id)") else {
+            throw DeckAPIError.invalidURL
+        }
+
+        var urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = "DELETE"
+        urlRequest.setValue("Bearer \(jwtToken)", forHTTPHeaderField: "Authorization")
+
+        do {
+            let (data, response) = try await URLSession.shared.data(for: urlRequest)
+
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw DeckAPIError.invalidResponse
+            }
+
+            if httpResponse.statusCode != 200 {
+                let errorMessage = try? JSONDecoder().decode(BackendErrorResponse.self, from: data)
+                throw DeckAPIError.serverError(errorMessage?.error ?? "Failed to delete deck with status \(httpResponse.statusCode)")
+            }
+        } catch {
+            if error is DeckAPIError {
+                throw error
+            }
+            throw DeckAPIError.networkError("Network error: \(error.localizedDescription)")
+        }
+    }
 }
 
 // MARK: - Errors
