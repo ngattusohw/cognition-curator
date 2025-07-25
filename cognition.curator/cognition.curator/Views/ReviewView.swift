@@ -116,13 +116,20 @@ struct ReviewView: View {
             // Progress header
             progressHeader
 
-            // Card view
-            cardView
+            // Scrollable card area
+            ScrollView {
+                VStack(spacing: 24) {
+                    // Card view
+                    cardView
 
-            // Difficulty buttons
-            if showingAnswer {
-                difficultyButtons
+                    // Difficulty buttons
+                    if showingAnswer {
+                        difficultyButtons
+                    }
+                }
+                .padding(.bottom, 50) // Extra padding for scroll area
             }
+            .scrollIndicators(.hidden)
 
             Spacer()
         }
@@ -260,6 +267,22 @@ struct ReviewView: View {
                             .opacity(0.6)
                     }
                     .padding(.top, 20)
+                    .onTapGesture {
+                        // Dedicated tap gesture for flipping cards
+                        if !isFlipping {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                isFlipping = true
+                            }
+
+                            // Flip the content after a short delay
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                                showingAnswer.toggle()
+                                withAnimation(.easeInOut(duration: 0.15)) {
+                                    isFlipping = false
+                                }
+                            }
+                        }
+                    }
                 }
                 .padding(40)
 
@@ -298,13 +321,12 @@ struct ReviewView: View {
                     .allowsHitTesting(false)
                 }
             }
-            .frame(height: 300)
             .scaleEffect(isFlipping ? 0.95 : 1.0)
             .offset(dragOffset)
             .rotationEffect(.degrees(dragOffset.width / 20.0))
             .animation(.easeInOut(duration: 0.3), value: isFlipping)
-            .gesture(
-                DragGesture(minimumDistance: 10)
+            .simultaneousGesture(
+                DragGesture(minimumDistance: 15) // Slightly increased minimum distance
                     .onChanged { value in
                         if !isFlipping {
                             withAnimation(.interactiveSpring()) {
@@ -329,25 +351,7 @@ struct ReviewView: View {
                         isBeingDragged = false
                     }
             )
-            .simultaneousGesture(
-                TapGesture()
-                    .onEnded {
-                        if !isBeingDragged && !isFlipping && abs(dragOffset.width) < 10 {
-                            withAnimation(.easeInOut(duration: 0.3)) {
-                                isFlipping = true
-                            }
 
-                            // Flip the content after a short delay
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                                showingAnswer.toggle()
-
-                                withAnimation(.easeInOut(duration: 0.3)) {
-                                    isFlipping = false
-                                }
-                            }
-                        }
-                    }
-            )
 
             // Swipe instruction
             VStack(spacing: 4) {

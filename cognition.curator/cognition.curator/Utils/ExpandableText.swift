@@ -1,6 +1,6 @@
 import SwiftUI
 
-// MARK: - Expandable Text Component
+// MARK: - Expandable Text Component (Simple Toggle)
 
 struct ExpandableText: View {
     let text: String
@@ -17,23 +17,21 @@ struct ExpandableText: View {
         self.color = color
     }
 
-        private var shouldShowExpandButton: Bool {
-        // Show expand button if text has multiple lines or is long
-        let lines = text.components(separatedBy: .newlines)
-        let hasMultipleLines = lines.count > lineLimit
-        let hasLongLines = lines.contains { $0.count > 80 } // Reduced from 100
-        let isTotallyLong = text.count > lineLimit * 40 // Reduced from 60
-
-        return hasMultipleLines || hasLongLines || isTotallyLong
+    private var shouldShowExpandButton: Bool {
+        // Simple, reliable check: if text is longer than estimated lines
+        let estimatedCharactersPerLine = 50
+        let estimatedTotalCharacters = lineLimit * estimatedCharactersPerLine
+        return text.count > estimatedTotalCharacters || text.contains("\n")
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 12) {
             Text(text)
                 .font(font)
                 .foregroundColor(color)
                 .lineLimit(isExpanded ? nil : lineLimit)
-                .multilineTextAlignment(.leading)
+                .multilineTextAlignment(.center)
+                .animation(.easeInOut(duration: 0.3), value: isExpanded)
 
             if shouldShowExpandButton {
                 Button(action: {
@@ -41,7 +39,7 @@ struct ExpandableText: View {
                         isExpanded.toggle()
                     }
                 }) {
-                    HStack(spacing: 4) {
+                    HStack(spacing: 6) {
                         Text(isExpanded ? "Show Less" : "Show More")
                             .font(.caption)
                             .fontWeight(.medium)
@@ -50,6 +48,90 @@ struct ExpandableText: View {
                             .font(.caption)
                     }
                     .foregroundColor(.blue)
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.blue.opacity(0.1))
+                    )
+                }
+                .buttonStyle(.plain)
+                .allowsHitTesting(true)
+            }
+        }
+    }
+}
+
+// MARK: - Modal Text View (Alternative)
+
+struct ModalText: View {
+    let text: String
+    let lineLimit: Int
+    let font: Font
+    let color: Color
+
+    @State private var showingModal = false
+
+    init(text: String, lineLimit: Int = 3, font: Font = .body, color: Color = .primary) {
+        self.text = text
+        self.lineLimit = lineLimit
+        self.font = font
+        self.color = color
+    }
+
+    private var shouldShowReadMoreButton: Bool {
+        let estimatedCharactersPerLine = 50
+        let estimatedTotalCharacters = lineLimit * estimatedCharactersPerLine
+        return text.count > estimatedTotalCharacters || text.contains("\n")
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(text)
+                .font(font)
+                .foregroundColor(color)
+                .lineLimit(lineLimit)
+
+            if shouldShowReadMoreButton {
+                Button(action: {
+                    showingModal = true
+                }) {
+                    HStack(spacing: 6) {
+                        Text("Read Full Text")
+                            .font(.caption)
+                            .fontWeight(.medium)
+
+                        Image(systemName: "doc.text")
+                            .font(.caption)
+                    }
+                    .foregroundColor(.blue)
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.blue.opacity(0.1))
+                    )
+                }
+                .buttonStyle(.plain)
+                .allowsHitTesting(true)
+                .sheet(isPresented: $showingModal) {
+                    NavigationView {
+                        ScrollView {
+                            Text(text)
+                                .font(font)
+                                .foregroundColor(color)
+                                .padding(20)
+                        }
+                        .navigationTitle("Full Text")
+                        .navigationBarTitleDisplayMode(.inline)
+                        .toolbar {
+                            ToolbarItem(placement: .navigationBarTrailing) {
+                                Button("Done") {
+                                    showingModal = false
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
