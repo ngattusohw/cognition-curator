@@ -94,11 +94,13 @@ def create_flashcards_batch():
             try:
                 # Validate required fields for each card
                 if not card_data.get("front") or not card_data.get("back"):
-                    failed_cards.append({
-                        "index": i,
-                        "error": "front and back are required",
-                        "card": card_data
-                    })
+                    failed_cards.append(
+                        {
+                            "index": i,
+                            "error": "front and back are required",
+                            "card": card_data,
+                        }
+                    )
                     continue
 
                 flashcard = Flashcard(
@@ -108,7 +110,9 @@ def create_flashcards_batch():
                     hint=card_data.get("hint"),
                     explanation=card_data.get("explanation"),
                     tags=card_data.get("tags", []),
-                    ai_generated=card_data.get("ai_generated", True),  # Default true for batch
+                    ai_generated=card_data.get(
+                        "ai_generated", True
+                    ),  # Default true for batch
                     ai_generation_prompt=card_data.get("ai_generation_prompt"),
                     source_reference=card_data.get("source_reference"),
                 )
@@ -117,11 +121,7 @@ def create_flashcards_batch():
                 created_flashcards.append(flashcard)
 
             except Exception as e:
-                failed_cards.append({
-                    "index": i,
-                    "error": str(e),
-                    "card": card_data
-                })
+                failed_cards.append({"index": i, "error": str(e), "card": card_data})
 
         # Commit all flashcards at once
         if created_flashcards:
@@ -130,7 +130,9 @@ def create_flashcards_batch():
         response = {
             "created_count": len(created_flashcards),
             "failed_count": len(failed_cards),
-            "flashcards": [card.to_dict(include_analytics=True) for card in created_flashcards]
+            "flashcards": [
+                card.to_dict(include_analytics=True) for card in created_flashcards
+            ],
         }
 
         if failed_cards:
