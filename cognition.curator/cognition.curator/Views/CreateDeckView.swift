@@ -26,6 +26,7 @@ struct CreateDeckView: View {
     @State private var isCreating = false
     @State private var showingError = false
     @State private var errorMessage = ""
+    @State private var deckCreatedByAI = false
     @StateObject private var aiService = AIGenerationService.shared
 
     private var deckAPIService: DeckAPIService {
@@ -73,7 +74,7 @@ struct CreateDeckView: View {
                         ProgressView()
                             .scaleEffect(0.8)
                     } else {
-                        Button("Create") {
+                        Button(showingAIGeneration && deckCreatedByAI ? "Done" : "Create") {
                             Task {
                                 await createDeck()
                             }
@@ -305,7 +306,10 @@ struct CreateDeckView: View {
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
         .sheet(isPresented: $showingAIReview) {
-            AICardReviewView(topic: aiTopic, deckName: deckName, generatedCards: $generatedCards)
+            AICardReviewView(topic: aiTopic, deckName: deckName, generatedCards: $generatedCards) {
+                // Called when deck is successfully created by AICardReviewView
+                deckCreatedByAI = true
+            }
         }
     }
 
@@ -389,6 +393,14 @@ struct CreateDeckView: View {
 
     private func createDeck() async {
         guard !deckName.isEmpty else { return }
+
+        // If AI generation was used and deck was already created by AICardReviewView, just dismiss
+        if showingAIGeneration && deckCreatedByAI {
+            await MainActor.run {
+                dismiss()
+            }
+            return
+        }
 
         // If AI generation was used but no cards were generated, prevent creation
         if showingAIGeneration && generatedCards.isEmpty {

@@ -5,6 +5,7 @@ struct AICardReviewView: View {
     let topic: String
     let deckName: String
     @Binding var generatedCards: [AIGeneratedCard]
+    let onDeckCreated: () -> Void
     @State private var currentCardIndex = 0
     @State private var showingEditCard = false
     @State private var editingCard: AIGeneratedCard?
@@ -17,10 +18,11 @@ struct AICardReviewView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @EnvironmentObject private var authService: AuthenticationService
 
-    init(topic: String, deckName: String, generatedCards: Binding<[AIGeneratedCard]>) {
+    init(topic: String, deckName: String, generatedCards: Binding<[AIGeneratedCard]>, onDeckCreated: @escaping () -> Void) {
         self.topic = topic
         self.deckName = deckName
         self._generatedCards = generatedCards
+        self.onDeckCreated = onDeckCreated
     }
 
     private var acceptedCards: [AIGeneratedCard] {
@@ -527,23 +529,23 @@ struct AICardReviewView: View {
                     color: "#007AFF"
                 )
 
-                // Create flashcards for accepted cards
+                // Create flashcards for accepted cards using batch API
                 let flashcardAPIService = FlashcardAPIService(authService: authService)
 
-                for card in acceptedCards {
-                    do {
-                        _ = try await flashcardAPIService.createFlashcard(
-                            deckId: backendDeck.id,
-                            front: card.question,
-                            back: card.answer,
-                            hint: nil,
-                            explanation: card.explanation,
-                            tags: card.tags,
-                            sourceReference: "AI Generated from topic: \(topic)"
-                        )
-                    } catch {
-                        print("Failed to create flashcard: \(error)")
-                    }
+                do {
+                    // Create comprehensive AI generation prompt for tracking
+                    let aiPrompt = "Generated \(acceptedCards.count) flashcards for topic: '\(topic)' with difficulty: \(acceptedCards.first?.difficulty.rawValue ?? "medium")"
+
+                    let backendFlashcards = try await flashcardAPIService.createFlashcardsBatch(
+                        deckId: backendDeck.id,
+                        cards: acceptedCards,
+                        sourceReference: "AI Generated from topic: \(topic)",
+                        aiGenerationPrompt: aiPrompt
+                    )
+                    print("✅ Created \(backendFlashcards.count) flashcards via batch API")
+                } catch {
+                    print("❌ Failed to create flashcards via batch API: \(error)")
+                    throw error
                 }
 
                 // Save locally in Core Data
@@ -572,6 +574,7 @@ struct AICardReviewView: View {
                     }
 
                     isCreatingDeck = false
+                    onDeckCreated() // Signal deck creation completion
                     dismiss()
                 }
 
@@ -851,6 +854,9 @@ struct BulkActionsView: View {
             AIGeneratedCard(question: "What is a variable?", answer: "A storage location with a name", difficulty: .easy),
             AIGeneratedCard(question: "What is inheritance?", answer: "A mechanism to create new classes based on existing ones", difficulty: .hard)
         ])
-    )
+    ) {
+        // Preview completion handler
+        print("Deck created in preview")
+    }
     .environmentObject(AuthenticationService.shared)
 }

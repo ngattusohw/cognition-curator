@@ -83,6 +83,46 @@ struct CreateFlashcardResponse: Codable {
     let flashcard: BackendFlashcard
 }
 
+struct BatchCreateFlashcardsRequest: Codable {
+    let deckId: String
+    let cards: [BatchFlashcardData]
+
+    enum CodingKeys: String, CodingKey {
+        case deckId = "deck_id"
+        case cards
+    }
+}
+
+struct BatchFlashcardData: Codable {
+    let front: String
+    let back: String
+    let hint: String?
+    let explanation: String?
+    let tags: [String]
+    let sourceReference: String?
+    let aiGenerated: Bool
+    let aiGenerationPrompt: String?
+
+    enum CodingKeys: String, CodingKey {
+        case front, back, hint, explanation, tags
+        case sourceReference = "source_reference"
+        case aiGenerated = "ai_generated"
+        case aiGenerationPrompt = "ai_generation_prompt"
+    }
+}
+
+struct BatchCreateFlashcardsResponse: Codable {
+    let createdCount: Int
+    let failedCount: Int
+    let flashcards: [BackendFlashcard]
+
+    enum CodingKeys: String, CodingKey {
+        case createdCount = "created_count"
+        case failedCount = "failed_count"
+        case flashcards
+    }
+}
+
 struct GetFlashcardsResponse: Codable {
     let flashcards: [BackendFlashcard]
     let totalCount: Int
@@ -161,6 +201,78 @@ class FlashcardAPIService: ObservableObject {
             } else {
                 let errorMessage = try? JSONDecoder().decode(BackendErrorResponse.self, from: data)
                 throw FlashcardAPIError.serverError(errorMessage?.error ?? "Failed to create flashcard with status \(httpResponse.statusCode)")
+            }
+        } catch {
+            if error is FlashcardAPIError {
+                throw error
+            }
+            throw FlashcardAPIError.networkError("Network error: \(error.localizedDescription)")
+        }
+    }
+
+    func createFlashcardsBatch(
+        deckId: String,
+        cards: [AIGeneratedCard],
+        sourceReference: String? = nil,
+        aiGenerationPrompt: String? = nil
+    ) async throws -> [BackendFlashcard] {
+        guard let jwtToken = authService.getCurrentJWTToken() else {
+            print("❌ FlashcardAPIService: No JWT token found for batch creation")
+            throw FlashcardAPIError.notAuthenticated
+        }
+
+        print("✅ FlashcardAPIService: Creating \(cards.count) flashcards in batch with JWT token: \(String(jwtToken.prefix(20)))...")
+
+        guard let url = URL(string: "\(baseURL)/flashcards/batch") else {
+            throw FlashcardAPIError.invalidURL
+        }
+
+        let batchCards = cards.map { card in
+            BatchFlashcardData(
+                front: card.question,
+                back: card.answer,
+                hint: nil,
+                explanation: card.explanation,
+                tags: card.tags,
+                sourceReference: sourceReference,
+                aiGenerated: true,
+                aiGenerationPrompt: aiGenerationPrompt
+            )
+        }
+
+        let request = BatchCreateFlashcardsRequest(
+            deckId: deckId,
+            cards: batchCards
+        )
+
+        var urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = "POST"
+        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        urlRequest.setValue("Bearer \(jwtToken)", forHTTPHeaderField: "Authorization")
+
+        do {
+            urlRequest.httpBody = try JSONEncoder().encode(request)
+        } catch {
+            throw FlashcardAPIError.encodingError("Failed to encode batch flashcard data")
+        }
+
+        do {
+            let (data, response) = try await URLSession.shared.data(for: urlRequest)
+
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw FlashcardAPIError.invalidResponse
+            }
+
+            if httpResponse.statusCode == 201 {
+                let batchResponse = try JSONDecoder().decode(BatchCreateFlashcardsResponse.self, from: data)
+                print("✅ FlashcardAPIService: Batch created \(batchResponse.createdCount) flashcards successfully")
+                if batchResponse.failedCount > 0 {
+                    print("⚠️ FlashcardAPIService: \(batchResponse.failedCount) cards failed to create")
+                }
+                return batchResponse.flashcards
+            } else {
+                let errorMessage = try? JSONDecoder().decode(BackendErrorResponse.self, from: data)
+                throw FlashcardAPIError.serverError(errorMessage?.error ?? "Failed to create flashcards batch with status \(httpResponse.statusCode)")
             }
         } catch {
             if error is FlashcardAPIError {

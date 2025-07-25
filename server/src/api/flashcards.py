@@ -58,6 +58,91 @@ def create_flashcard():
         return jsonify({"error": f"Failed to create flashcard: {str(e)}"}), 500
 
 
+@flashcards_bp.route("/batch", methods=["POST"])
+@jwt_required()
+def create_flashcards_batch():
+    """Create multiple flashcards in a single request."""
+    try:
+        current_user_id = get_jwt_identity()
+        data = request.get_json()
+
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
+
+        deck_id = data.get("deck_id")
+        cards_data = data.get("cards", [])
+
+        if not deck_id:
+            return jsonify({"error": "deck_id is required"}), 400
+
+        if not cards_data or not isinstance(cards_data, list):
+            return jsonify({"error": "cards array is required"}), 400
+
+        if len(cards_data) > 50:  # Reasonable batch limit
+            return jsonify({"error": "Maximum 50 cards per batch"}), 400
+
+        # Verify deck belongs to user
+        deck = Deck.query.filter_by(id=deck_id, user_id=current_user_id).first()
+        if not deck:
+            return jsonify({"error": "Deck not found or access denied"}), 404
+
+        created_flashcards = []
+        failed_cards = []
+
+        # Create all flashcards in a single transaction
+        for i, card_data in enumerate(cards_data):
+            try:
+                # Validate required fields for each card
+                if not card_data.get("front") or not card_data.get("back"):
+                    failed_cards.append({
+                        "index": i,
+                        "error": "front and back are required",
+                        "card": card_data
+                    })
+                    continue
+
+                flashcard = Flashcard(
+                    front=card_data["front"],
+                    back=card_data["back"],
+                    deck_id=deck_id,
+                    hint=card_data.get("hint"),
+                    explanation=card_data.get("explanation"),
+                    tags=card_data.get("tags", []),
+                    ai_generated=card_data.get("ai_generated", True),  # Default true for batch
+                    ai_generation_prompt=card_data.get("ai_generation_prompt"),
+                    source_reference=card_data.get("source_reference"),
+                )
+
+                db.session.add(flashcard)
+                created_flashcards.append(flashcard)
+
+            except Exception as e:
+                failed_cards.append({
+                    "index": i,
+                    "error": str(e),
+                    "card": card_data
+                })
+
+        # Commit all flashcards at once
+        if created_flashcards:
+            db.session.commit()
+
+        response = {
+            "created_count": len(created_flashcards),
+            "failed_count": len(failed_cards),
+            "flashcards": [card.to_dict(include_analytics=True) for card in created_flashcards]
+        }
+
+        if failed_cards:
+            response["failed_cards"] = failed_cards
+
+        return jsonify(response), 201
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": f"Failed to create flashcards: {str(e)}"}), 500
+
+
 @flashcards_bp.route("/deck/<deck_id>", methods=["GET"])
 @jwt_required()
 def get_deck_flashcards(deck_id):
