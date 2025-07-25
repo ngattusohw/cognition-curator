@@ -18,10 +18,24 @@ struct ExpandableText: View {
     }
 
     private var shouldShowExpandButton: Bool {
-        // Simple, reliable check: if text is longer than estimated lines
-        let estimatedCharactersPerLine = 50
+        // Be more aggressive about showing expand button
+        let words = text.components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty }
+        let lines = text.components(separatedBy: .newlines)
+
+        // Multiple conditions to catch more cases
+        let hasMultipleLines = lines.count > lineLimit
+        let hasNewlines = text.contains("\n")
+        let isMediumLength = text.count > 60  // Always show for 60+ chars (more aggressive)
+        let hasLongWords = words.contains { $0.count > 20 } // Long words might wrap
+        let hasManyWords = words.count > lineLimit * 6 // ~6 words per line estimate (more aggressive)
+        let hasLotsOfWords = words.count > 15 // If more than 15 words, probably needs expanding
+
+        // For title2 font, estimate ~25-30 chars per line (very conservative for large font)
+        let estimatedCharactersPerLine = font == .title2 ? 25 : 35
         let estimatedTotalCharacters = lineLimit * estimatedCharactersPerLine
-        return text.count > estimatedTotalCharacters || text.contains("\n")
+        let isLongText = text.count > estimatedTotalCharacters
+
+        return hasMultipleLines || hasNewlines || isMediumLength || hasLongWords || hasManyWords || hasLotsOfWords || isLongText
     }
 
     var body: some View {
@@ -80,9 +94,22 @@ struct ModalText: View {
     }
 
     private var shouldShowReadMoreButton: Bool {
-        let estimatedCharactersPerLine = 50
+        // Use same aggressive logic as ExpandableText
+        let words = text.components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty }
+        let lines = text.components(separatedBy: .newlines)
+
+        let hasMultipleLines = lines.count > lineLimit
+        let hasNewlines = text.contains("\n")
+        let isMediumLength = text.count > 60
+        let hasLongWords = words.contains { $0.count > 20 }
+        let hasManyWords = words.count > lineLimit * 6
+        let hasLotsOfWords = words.count > 15
+
+        let estimatedCharactersPerLine = font == .title2 ? 25 : 35
         let estimatedTotalCharacters = lineLimit * estimatedCharactersPerLine
-        return text.count > estimatedTotalCharacters || text.contains("\n")
+        let isLongText = text.count > estimatedTotalCharacters
+
+        return hasMultipleLines || hasNewlines || isMediumLength || hasLongWords || hasManyWords || hasLotsOfWords || isLongText
     }
 
     var body: some View {
