@@ -7,16 +7,16 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-# Add the src directory to the Python path for absolute imports
-src_dir = Path(__file__).parent
-sys.path.insert(0, str(src_dir.parent))
-
-from flask import Flask
+from flask import Flask, request
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 
 from src.config.config import DevelopmentConfig, ProductionConfig, TestingConfig
 from src.database import db, init_db
+
+# Add the src directory to the Python path for absolute imports
+src_dir = Path(__file__).parent
+sys.path.insert(0, str(src_dir.parent))
 
 
 def create_app(config_name=None):
@@ -145,6 +145,30 @@ def create_app(config_name=None):
             "error": "Authorization token required",
             "code": "authorization_required",
         }, 401
+
+    # Global error handlers for better logging
+    @app.errorhandler(500)
+    def internal_error(error):
+        app.logger.error(f"Internal Server Error: {error}")
+        app.logger.error(f"Error details: {str(error.original_exception)}")
+        return {"error": "Internal server error", "code": "internal_error"}, 500
+
+    @app.errorhandler(404)
+    def not_found_error(error):
+        app.logger.warning(f"404 Error: {request.url}")
+        return {"error": "Resource not found", "code": "not_found"}, 404
+
+    @app.errorhandler(Exception)
+    def handle_exception(e):
+        app.logger.error(f"Unhandled exception: {str(e)}")
+        app.logger.error(f"Exception type: {type(e).__name__}")
+        import traceback
+
+        app.logger.error(f"Traceback: {traceback.format_exc()}")
+        return {
+            "error": "An unexpected error occurred",
+            "code": "unexpected_error",
+        }, 500
 
     return app
 
