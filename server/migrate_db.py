@@ -4,15 +4,17 @@ Database migration script for Railway deployment.
 Runs migrations programmatically without relying on Flask CLI.
 """
 
-import sys
 import os
+import sys
 from pathlib import Path
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 from flask_migrate import upgrade
+
 from src.app import create_app
+
 
 def run_migrations():
     """Run database migrations."""
@@ -30,6 +32,7 @@ def run_migrations():
     except Exception as e:
         print(f"❌ Migration failed: {str(e)}")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     run_migrations()
