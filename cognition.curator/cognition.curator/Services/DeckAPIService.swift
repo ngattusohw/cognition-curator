@@ -43,7 +43,7 @@ struct GetDecksResponse: Codable {
 
 @MainActor
 class DeckAPIService: ObservableObject {
-    private let baseURL = "http://127.0.0.1:5001/api"
+    private let baseURL = APIConfiguration.baseURL
     private let authService: AuthenticationService
 
     init(authService: AuthenticationService) {

@@ -196,7 +196,7 @@ struct FlashcardReviewSync: Codable {
 class AnalyticsAPIService: ObservableObject {
     static let shared = AnalyticsAPIService()
 
-    private let baseURL = "http://127.0.0.1:5001/api"  // Updated to use 127.0.0.1 for iOS Simulator
+    private let baseURL = APIConfiguration.baseURL
     private var cancellables = Set<AnyCancellable>()
 
     private init() {}

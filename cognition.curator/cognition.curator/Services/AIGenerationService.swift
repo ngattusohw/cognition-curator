@@ -105,7 +105,7 @@ class AIGenerationService: ObservableObject {
     @Published var generationProgress: Double = 0.0
     @Published var lastError: String?
 
-    private let baseURL = "http://127.0.0.1:5001/api"
+    private let baseURL = APIConfiguration.baseURL
     private var cancellables = Set<AnyCancellable>()
 
     private init() {}

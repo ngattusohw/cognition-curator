@@ -137,10 +137,11 @@ class AuthenticationService: ObservableObject {
     private let usersStorageKey = "storedUsers"
 
     // Backend configuration
-    private let baseURL = "http://127.0.0.1:5001/api"  // Use 127.0.0.1 for iOS Simulator compatibility
+    private let baseURL = APIConfiguration.baseURL
 
     init() {
         print("🔑 AuthService: Initializing authentication service...")
+        APIConfiguration.printConfiguration()
         loadSavedUser()
     }
 
