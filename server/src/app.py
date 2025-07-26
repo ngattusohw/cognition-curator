@@ -4,6 +4,7 @@ Main Flask application for Cognition Curator Server.
 
 import os
 import sys
+from datetime import datetime
 from pathlib import Path
 
 # Add the src directory to the Python path for absolute imports
@@ -14,8 +15,8 @@ from flask import Flask
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 
-from src.config.config import Config, DevelopmentConfig, ProductionConfig, TestingConfig
-from src.database import init_db
+from src.config.config import DevelopmentConfig, ProductionConfig, TestingConfig
+from src.database import db, init_db
 
 
 def create_app(config_name=None):
@@ -62,7 +63,72 @@ def create_app(config_name=None):
     # Health check endpoint
     @app.route("/health")
     def health_check():
-        return {"status": "healthy", "service": "cognition-curator-api"}
+        """Comprehensive health check for Railway monitoring"""
+        try:
+            status = {"status": "healthy", "service": "cognition-curator-api"}
+            checks = {}
+            overall_healthy = True
+
+            # Check database connectivity
+            try:
+                from sqlalchemy import text
+
+                db.session.execute(text("SELECT 1"))
+                checks["database"] = {
+                    "status": "healthy",
+                    "message": "Database connection successful",
+                }
+            except Exception as e:
+                checks["database"] = {
+                    "status": "unhealthy",
+                    "message": f"Database error: {str(e)}",
+                }
+                overall_healthy = False
+
+            # Check required environment variables
+            required_env_vars = ["SECRET_KEY", "JWT_SECRET_KEY"]
+            env_status = []
+            for var in required_env_vars:
+                if os.environ.get(var):
+                    env_status.append(f"{var}: ✓")
+                else:
+                    env_status.append(f"{var}: ✗ MISSING")
+                    overall_healthy = False
+
+            checks["environment"] = {
+                "status": "healthy" if overall_healthy else "unhealthy",
+                "variables": env_status,
+            }
+
+            # Check Flask configuration
+            checks["flask"] = {
+                "status": "healthy",
+                "debug": app.debug,
+                "environment": os.environ.get("FLASK_ENV", "development"),
+            }
+
+            status["checks"] = checks
+            status["timestamp"] = datetime.now().isoformat()
+
+            if overall_healthy:
+                return status, 200
+            else:
+                status["status"] = "unhealthy"
+                return status, 503
+
+        except Exception as e:
+            return {
+                "status": "unhealthy",
+                "service": "cognition-curator-api",
+                "error": str(e),
+                "timestamp": datetime.now().isoformat(),
+            }, 500
+
+    # Simple health check for Railway's built-in monitoring
+    @app.route("/ping")
+    def ping():
+        """Simple ping endpoint for basic uptime monitoring"""
+        return {"status": "ok", "message": "pong"}, 200
 
     # JWT error handlers
     @jwt.expired_token_loader
