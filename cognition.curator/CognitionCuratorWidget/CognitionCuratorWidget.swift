@@ -51,13 +51,17 @@ struct FlashcardProvider: TimelineProvider {
 
         let dueCount = sharedDefaults.integer(forKey: "widget.dueCardsCount")
         let hasCards = sharedDefaults.bool(forKey: "widget.hasCards")
+        let lastUpdated = sharedDefaults.object(forKey: "widget.lastUpdated") as? Date
+
+        // Debug logging
+        print("🎯 Widget: Reading data - Due: \(dueCount), HasCards: \(hasCards), LastUpdated: \(lastUpdated?.description ?? "Never")")
 
         if hasCards && dueCount > 0 {
             // Show sample card when we have due cards
             return ReviewQuestionEntry(
                 date: Date(),
                 question: "Ready to review?",
-                answer: "You have \(dueCount) cards ready for review",
+                answer: "You have \(dueCount) card\(dueCount == 1 ? "" : "s") ready for review",
                 deckName: "Study Session",
                 cardId: nil,
                 hasContent: true
@@ -73,11 +77,15 @@ struct FlashcardProvider: TimelineProvider {
                 hasContent: true
             )
         } else {
-            // No cards at all
+            // No cards at all or data not loaded yet
+            let message = lastUpdated == nil ?
+                "Open the app to sync your cards" :
+                "Create some flashcard decks to get started!"
+
             return ReviewQuestionEntry(
                 date: Date(),
                 question: "No cards yet",
-                answer: "Create some flashcard decks to get started!",
+                answer: message,
                 deckName: "Get Started",
                 cardId: nil,
                 hasContent: false

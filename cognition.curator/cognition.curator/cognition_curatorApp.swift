@@ -52,6 +52,8 @@ struct cognition_curatorApp: App {
                 // Update widget data when app launches
                 if authService.isAuthenticated {
                     WidgetDataService.shared.refreshOnAppLaunch()
+                    // Debug: Print shared defaults to help troubleshoot
+                    WidgetDataService.shared.debugSharedDefaults()
                 }
             }
             .onChange(of: authService.isAuthenticated) { isAuthenticated in

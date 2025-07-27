@@ -12,7 +12,7 @@ import WidgetKit
 struct CognitionCuratorWidgetControl: ControlWidget {
     var body: some ControlWidgetConfiguration {
         StaticControlConfiguration(
-            kind: "collect.software.cognition-curator.CognitionCuratorWidget.Control",
+            kind: "CognitionCuratorWidgetControl",
             provider: ReviewProvider()
         ) { reviewData in
             ControlWidgetButton(action: LaunchReviewIntent()) {
@@ -69,7 +69,10 @@ struct LaunchReviewIntent: AppIntent {
     static let openAppWhenRun = true
 
     func perform() async throws -> some IntentResult {
-        // Return a URL result that will be handled by the system
-        return .result(opensIntent: OpenURLIntent(URL(string: "cognitioncurator://review")!))
+        // Use URL to trigger app opening and navigation
+        if let url = URL(string: "cognitioncurator://review") {
+            try await OpenURLIntent(url).perform()
+        }
+        return .result()
     }
 }
