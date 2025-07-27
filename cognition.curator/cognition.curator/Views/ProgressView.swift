@@ -339,13 +339,35 @@ struct ProgressStatsView: View {
             }
 
             VStack(spacing: 20) {
-                // Daily activity chart
-                DailyActivityChart()
+                // Daily activity chart with real data
+                DailyActivityChart(dailyStats: combinedDailyStats)
 
-                // Accuracy trend chart
-                AccuracyTrendChart()
+                // Accuracy trend chart with real data
+                AccuracyTrendChart(dailyStats: combinedDailyStats)
             }
         }
+    }
+
+    // MARK: - Unified Data Access
+
+    private var combinedDailyStats: [DailyProgress] {
+        // First try to use offline data (which uses LocalDayStats)
+        if let localData = offlineProgressService.localProgressData {
+            return localData.weeklyStats.map { localStat in
+                DailyProgress(
+                    date: localStat.date,
+                    studyMinutes: localStat.studyMinutes,
+                    cardsReviewed: localStat.cardsReviewed,
+                    accuracyRate: localStat.accuracyRate
+                )
+            }
+        }
+        // Fallback to online data
+        else if let onlineData = progressDataService.progressData {
+            return onlineData.dailyStats
+        }
+        // No data available
+        return []
     }
 
     private var recentActivitySection: some View {
@@ -417,26 +439,92 @@ struct StatOverviewCard: View {
 }
 
 struct DailyActivityChart: View {
+    let dailyStats: [DailyProgress]
+
+    private var chartData: [(String, Int, Int)] {
+        let calendar = Calendar.current
+        let today = Date()
+
+        // Get last 7 days
+        let last7Days = (0..<7).compactMap { daysBack in
+            calendar.date(byAdding: .day, value: -daysBack, to: today)
+        }.reversed()
+
+        return last7Days.map { date in
+            let dayLabel = DateFormatter().weekdaySymbols[calendar.component(.weekday, from: date) - 1].prefix(1).uppercased()
+
+            // Find matching daily stat
+            if let stat = dailyStats.first(where: { calendar.isDate($0.date, inSameDayAs: date) }) {
+                return (String(dayLabel), stat.studyMinutes, stat.cardsReviewed)
+            } else {
+                return (String(dayLabel), 0, 0)
+            }
+        }
+    }
+
+    private var maxStudyMinutes: Int {
+        max(chartData.map { $0.1 }.max() ?? 1, 10) // Minimum height for visibility
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Daily Activity")
-                .font(.headline)
-                .fontWeight(.semibold)
+            HStack {
+                Text("Daily Activity")
+                    .font(.headline)
+                    .fontWeight(.semibold)
+
+                Spacer()
+
+                Text("Study Time")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
 
             HStack(alignment: .bottom, spacing: 8) {
-                ForEach(0..<7, id: \.self) { day in
-                    VStack(spacing: 4) {
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(Color.blue.opacity(0.7))
-                            .frame(height: CGFloat.random(in: 20...80))
+                ForEach(Array(chartData.enumerated()), id: \.offset) { index, data in
+                    let (dayLabel, studyMinutes, cardsReviewed) = data
 
-                        Text(["M", "T", "W", "T", "F", "S", "S"][day])
+                    VStack(spacing: 4) {
+                        // Bar representing study minutes
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(studyMinutes > 0 ? Color.blue.opacity(0.8) : Color.gray.opacity(0.3))
+                            .frame(height: max(CGFloat(studyMinutes) / CGFloat(maxStudyMinutes) * 80, 4))
+
+                        // Day label
+                        Text(dayLabel)
                             .font(.caption2)
                             .foregroundColor(.secondary)
+                    }
+                    .onTapGesture {
+                        // Could show a tooltip or details
+                        print("📊 Day: \(dayLabel), Study: \(studyMinutes)min, Cards: \(cardsReviewed)")
                     }
                 }
             }
             .frame(height: 100)
+
+            // Summary stats
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("7-Day Total")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Text("\(chartData.map { $0.1 }.reduce(0, +))min")
+                        .font(.caption)
+                        .fontWeight(.medium)
+                }
+
+                Spacer()
+
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text("Cards Reviewed")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Text("\(chartData.map { $0.2 }.reduce(0, +))")
+                        .font(.caption)
+                        .fontWeight(.medium)
+                }
+            }
         }
         .padding(20)
         .background(Color(uiColor: UIColor.systemBackground))
@@ -446,31 +534,130 @@ struct DailyActivityChart: View {
 }
 
 struct AccuracyTrendChart: View {
+    let dailyStats: [DailyProgress]
+
+    private var chartData: [(String, Double)] {
+        let calendar = Calendar.current
+        let today = Date()
+
+        // Get last 7 days
+        let last7Days = (0..<7).compactMap { daysBack in
+            calendar.date(byAdding: .day, value: -daysBack, to: today)
+        }.reversed()
+
+        return last7Days.map { date in
+            let dayLabel = DateFormatter().weekdaySymbols[calendar.component(.weekday, from: date) - 1].prefix(1).uppercased()
+
+            // Find matching daily stat
+            if let stat = dailyStats.first(where: { calendar.isDate($0.date, inSameDayAs: date) }) {
+                return (String(dayLabel), stat.accuracyRate)
+            } else {
+                return (String(dayLabel), 0.0)
+            }
+        }
+    }
+
+    private var averageAccuracy: Double {
+        let validAccuracies = chartData.compactMap { $0.1 > 0 ? $0.1 : nil }
+        return validAccuracies.isEmpty ? 0 : validAccuracies.reduce(0, +) / Double(validAccuracies.count)
+    }
+
+    private var accuracyTrend: String {
+        let validData = chartData.compactMap { $0.1 > 0 ? $0.1 : nil }
+        guard validData.count >= 2 else { return "No data" }
+
+        let recent = Array(validData.suffix(3))
+        let older = Array(validData.prefix(max(validData.count - 3, 1)))
+
+        let recentAvg = recent.reduce(0, +) / Double(recent.count)
+        let olderAvg = older.reduce(0, +) / Double(older.count)
+
+        if recentAvg > olderAvg + 0.05 {
+            return "Improving"
+        } else if recentAvg < olderAvg - 0.05 {
+            return "Declining"
+        } else {
+            return "Stable"
+        }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Accuracy Trend")
-                .font(.headline)
-                .fontWeight(.semibold)
+            HStack {
+                Text("Accuracy Trend")
+                    .font(.headline)
+                    .fontWeight(.semibold)
+
+                Spacer()
+
+                Text(accuracyTrend)
+                    .font(.caption)
+                    .foregroundColor(accuracyTrend == "Improving" ? .green :
+                                   accuracyTrend == "Declining" ? .red : .secondary)
+                    .fontWeight(.medium)
+            }
 
             HStack(alignment: .bottom, spacing: 8) {
-                ForEach(0..<7, id: \.self) { day in
-                    VStack(spacing: 4) {
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(Color.green.opacity(0.7))
-                            .frame(height: CGFloat.random(in: 30...60))
+                ForEach(Array(chartData.enumerated()), id: \.offset) { index, data in
+                    let (dayLabel, accuracy) = data
+                    let hasData = accuracy > 0
+                    let heightRatio = hasData ? accuracy : 0.1 // Minimum height for no-data days
 
-                        Text(["M", "T", "W", "T", "F", "S", "S"][day])
+                    VStack(spacing: 4) {
+                        // Bar representing accuracy rate
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(hasData ? accuracyColor(for: accuracy) : Color.gray.opacity(0.3))
+                            .frame(height: max(CGFloat(heightRatio) * 80, 4))
+
+                        // Day label
+                        Text(dayLabel)
                             .font(.caption2)
                             .foregroundColor(.secondary)
+                    }
+                    .onTapGesture {
+                        print("📊 Day: \(dayLabel), Accuracy: \(hasData ? "\(Int(accuracy * 100))%" : "No data")")
                     }
                 }
             }
             .frame(height: 100)
+
+            // Summary stats
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("7-Day Average")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Text("\(Int(averageAccuracy * 100))%")
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .foregroundColor(accuracyColor(for: averageAccuracy))
+                }
+
+                Spacer()
+
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text("Study Days")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Text("\(chartData.filter { $0.1 > 0 }.count)/7")
+                        .font(.caption)
+                        .fontWeight(.medium)
+                }
+            }
         }
         .padding(20)
         .background(Color(uiColor: UIColor.systemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+    }
+
+    private func accuracyColor(for accuracy: Double) -> Color {
+        switch accuracy {
+        case 0.9...: return .green
+        case 0.8..<0.9: return .blue
+        case 0.7..<0.8: return .orange
+        default: return .red
+        }
     }
 }
 
