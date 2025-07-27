@@ -2,9 +2,11 @@
 
 - Fix Apple login flow - user stays on login screen after successful 200 response when creating new user, should automatically redirect into the app
 - Make daily and accuracy trends in the learning trends section display actual data instead of placeholder/empty charts
-- Improve UX when clicking delete during AI generated deck review - show a card reject/deleted toast and make it clear we're going to next card for review
 - home button when on the deck screen doesnt work
 - should have the ability to silence a deck to stop showing the cards from it
 - fix retry in the ai gen review -- adds variation 1 a bunch
-- shuffle the cards
+- # shuffle the cards
+
 ## COMPLETE
+
+- Improve UX when clicking delete during AI generated deck review - show a card reject/deleted toast and make it clear we're going to next card for review

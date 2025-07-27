@@ -13,6 +13,7 @@ struct AICardReviewView: View {
     @State private var isCreatingDeck = false
     @State private var showingError = false
     @State private var errorMessage = ""
+    @StateObject private var toastManager = ToastManager()
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.managedObjectContext) private var viewContext
@@ -82,6 +83,7 @@ struct AICardReviewView: View {
             } message: {
                 Text(errorMessage)
             }
+            .toast(manager: toastManager)
         }
     }
 
@@ -454,7 +456,27 @@ struct AICardReviewView: View {
 
     private func toggleCardAcceptance(_ card: AIGeneratedCard) {
         if let index = generatedCards.firstIndex(where: { $0.id == card.id }) {
+            let wasAccepted = generatedCards[index].isAccepted
             generatedCards[index].isAccepted.toggle()
+
+            // Show appropriate feedback
+            if wasAccepted {
+                toastManager.show(
+                    message: "Card rejected • Won't be added to deck",
+                    type: .warning,
+                    duration: 2.0
+                )
+            } else {
+                toastManager.show(
+                    message: "Card accepted • Will be added to deck",
+                    type: .success,
+                    duration: 2.0
+                )
+            }
+
+            // Add haptic feedback
+            let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+            impactFeedback.impactOccurred()
         }
     }
 
@@ -465,21 +487,54 @@ struct AICardReviewView: View {
     }
 
     private func deleteCard(_ card: AIGeneratedCard) {
+        let wasLastCard = currentCardIndex == generatedCards.count - 1
+        let cardPosition = currentCardIndex + 1
+        let totalCards = generatedCards.count
+
+        // Remove the card
         generatedCards.removeAll { $0.id == card.id }
 
-        // Auto-advance to next card or adjust index if at end
+        // Determine the action and show appropriate feedback
         if generatedCards.isEmpty {
             // No cards left
             currentCardIndex = 0
-        } else if currentCardIndex >= generatedCards.count {
+            toastManager.show(
+                message: "Card deleted • All cards reviewed",
+                type: .info,
+                duration: 2.5
+            )
+        } else if wasLastCard {
             // We were at the last card, go to the new last card
             currentCardIndex = generatedCards.count - 1
+            toastManager.show(
+                message: "Card deleted • Moved to previous card",
+                type: .success,
+                duration: 2.5
+            )
+        } else {
+            // Show next card (index stays the same since array shifted)
+            let nextCardPosition = currentCardIndex + 1
+            let remainingCards = generatedCards.count
+            toastManager.show(
+                message: "Card deleted • Showing card \(nextCardPosition) of \(remainingCards)",
+                type: .success,
+                duration: 2.5
+            )
         }
-        // If currentCardIndex < generatedCards.count, we automatically show the next card
-        // since the array shifted when we removed the card
+
+        // Add haptic feedback for better UX
+        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+        impactFeedback.impactOccurred()
     }
 
     private func generateSimilarCards(basedOn card: AIGeneratedCard) {
+        // Show loading state feedback
+        toastManager.show(
+            message: "Generating new card...",
+            type: .info,
+            duration: 1.5
+        )
+
         Task {
             do {
                 // Generate just 1 similar card to replace the current one
@@ -490,12 +545,30 @@ struct AICardReviewView: View {
                         // Replace the current card with the new similar card
                         generatedCards[currentCardIndex] = newCard
                         print("🔄 Replaced card at index \(currentCardIndex) with similar card: \(newCard.question)")
+
+                        // Show success feedback
+                        toastManager.show(
+                            message: "New card generated • Review updated content",
+                            type: .success,
+                            duration: 2.5
+                        )
+
+                        // Add haptic feedback
+                        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+                        impactFeedback.impactOccurred()
                     }
                 }
             } catch {
                 await MainActor.run {
                     errorMessage = "Failed to generate similar card: \(error.localizedDescription)"
                     showingError = true
+
+                    // Also show toast for immediate feedback
+                    toastManager.show(
+                        message: "Failed to generate new card",
+                        type: .error,
+                        duration: 3.0
+                    )
                 }
             }
         }
@@ -517,6 +590,13 @@ struct AICardReviewView: View {
         guard !acceptedCards.isEmpty else { return }
 
         isCreatingDeck = true
+
+        // Show loading feedback
+        toastManager.show(
+            message: "Creating deck with \(acceptedCards.count) cards...",
+            type: .info,
+            duration: 2.0
+        )
 
         Task {
             do {
@@ -575,11 +655,26 @@ struct AICardReviewView: View {
 
                     isCreatingDeck = false
 
+                    // Show success feedback
+                    toastManager.show(
+                        message: "✅ Deck '\(deckName)' created with \(acceptedCards.count) cards!",
+                        type: .success,
+                        duration: 3.0
+                    )
+
+                    // Add haptic feedback for success
+                    let successFeedback = UINotificationFeedbackGenerator()
+                    successFeedback.notificationOccurred(.success)
+
                     // Update widget data after creating AI deck with cards
                     WidgetDataService.shared.refreshAfterAddingCards()
 
                     onDeckCreated() // Signal deck creation completion
-                    dismiss()
+
+                    // Delay dismiss slightly to show success toast
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        dismiss()
+                    }
                 }
 
             } catch {
@@ -587,6 +682,17 @@ struct AICardReviewView: View {
                     isCreatingDeck = false
                     errorMessage = "Failed to create deck: \(error.localizedDescription)"
                     showingError = true
+
+                    // Show error toast as well
+                    toastManager.show(
+                        message: "Failed to create deck",
+                        type: .error,
+                        duration: 3.0
+                    )
+
+                    // Add error haptic feedback
+                    let errorFeedback = UINotificationFeedbackGenerator()
+                    errorFeedback.notificationOccurred(.error)
                 }
             }
         }
