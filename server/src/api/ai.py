@@ -12,6 +12,38 @@ logger = logging.getLogger(__name__)
 ai_bp = Blueprint("ai", __name__)
 
 
+@ai_bp.route("/status", methods=["GET"])
+async def ai_status():
+    """Check AI provider status and configuration"""
+    try:
+        provider = ai_manager.get_provider()
+        provider_info = provider.get_provider_info()
+
+        return (
+            jsonify(
+                {
+                    "status": "ok",
+                    "provider": provider_info,
+                    "message": "AI service is configured and ready",
+                }
+            ),
+            200,
+        )
+
+    except Exception as e:
+        logger.error(f"AI status check failed: {str(e)}")
+        return (
+            jsonify(
+                {
+                    "status": "error",
+                    "error": str(e),
+                    "message": "AI service is not properly configured",
+                }
+            ),
+            500,
+        )
+
+
 @ai_bp.route("/generate-flashcards", methods=["POST"])
 async def generate_flashcards():
     """Generate flashcards using real AI"""
