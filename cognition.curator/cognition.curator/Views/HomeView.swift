@@ -284,7 +284,10 @@ struct HomeView: View {
             } else {
                 LazyVStack(spacing: 12) {
                     ForEach(Array(decks.prefix(3)), id: \.id) { deck in
-                        DeckRowView(deck: deck)
+                        NavigationLink(destination: DeckDetailView(deck: deck)) {
+                            DeckRowView(deck: deck)
+                        }
+                        .buttonStyle(PlainButtonStyle())
                     }
                 }
             }
