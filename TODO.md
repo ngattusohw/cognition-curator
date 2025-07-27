@@ -5,4 +5,6 @@
 - Improve UX when clicking delete during AI generated deck review - show a card reject/deleted toast and make it clear we're going to next card for review
 - home button when on the deck screen doesnt work
 - should have the ability to silence a deck to stop showing the cards from it
+- fix retry in the ai gen review -- adds variation 1 a bunch
+
 ## COMPLETE
