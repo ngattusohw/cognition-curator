@@ -315,7 +315,7 @@ struct AICardReviewView: View {
                 }) {
                     HStack {
                         Image(systemName: "wand.and.stars")
-                        Text("Similar")
+                        Text("Retry")
                             .fontWeight(.medium)
                     }
                     .frame(maxWidth: .infinity)
