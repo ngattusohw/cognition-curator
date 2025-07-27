@@ -6,7 +6,20 @@
 	objectVersion = 77 ;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		054B94542E36A7D1004377B3 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile                                    ; fileRef = 054B94532E36A7D1004377B3 /* WidgetKit.framework */; };
+		054B94562E36A7D1004377B3 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile                                      ; fileRef = 054B94552E36A7D1004377B3 /* SwiftUI.framework */; };
+		054B94632E36A7D3004377B3 /* CognitionCuratorWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile ; fileRef = 054B94512E36A7D1004377B3 /* CognitionCuratorWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
+		054B94612E36A7D3004377B3 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy                                     ;
+			containerPortal = A90944B92E248E2C006C0B90 /* Project object */ ;
+			proxyType = 1                                                   ;
+			remoteGlobalIDString = 054B94502E36A7D1004377B3                 ;
+			remoteInfo = CognitionCuratorWidgetExtension                    ;
+		}                                                                ;
 		A90944D02E248E2D006C0B90 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy                                     ;
 			containerPortal = A90944B92E248E2C006C0B90 /* Project object */ ;
@@ -23,146 +36,226 @@
 		}                                                                ;
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		054B94642E36A7D3004377B3 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase                                                                          ;
+			buildActionMask = 2147483647                                                                          ;
+			dstPath = "";
+			dstSubfolderSpec = 13                                                                                 ;
+			files = (
+				054B94632E36A7D3004377B3 /* CognitionCuratorWidgetExtension.appex in Embed Foundation Extensions */,
+			)                                                                                                     ;
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0                                                                ;
+		}                                                                                                      ;
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
-		A90944C12E248E2C006C0B90 /* cognition.curator.app */ = {isa = PBXFileReference           ; explicitFileType = wrapper.application; includeInIndex = 0; path = cognition.curator.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		A90944CF2E248E2D006C0B90 /* cognition.curatorTests.xctest */ = {isa = PBXFileReference   ; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = cognition.curatorTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		A90944D92E248E2D006C0B90 /* cognition.curatorUITests.xctest */ = {isa = PBXFileReference ; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = cognition.curatorUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		054B94512E36A7D1004377B3 /* CognitionCuratorWidgetExtension.appex */ = {isa = PBXFileReference ; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = CognitionCuratorWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		054B94532E36A7D1004377B3 /* WidgetKit.framework */ = {isa = PBXFileReference                   ; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		054B94552E36A7D1004377B3 /* SwiftUI.framework */ = {isa = PBXFileReference                     ; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		A90944C12E248E2C006C0B90 /* cognition.curator.app */ = {isa = PBXFileReference                 ; explicitFileType = wrapper.application; includeInIndex = 0; path = cognition.curator.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A90944CF2E248E2D006C0B90 /* cognition.curatorTests.xctest */ = {isa = PBXFileReference         ; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = cognition.curatorTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A90944D92E248E2D006C0B90 /* cognition.curatorUITests.xctest */ = {isa = PBXFileReference       ; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = cognition.curatorUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		054B94672E36A7D3004377B3 /* Exceptions for "CognitionCuratorWidget" folder in "CognitionCuratorWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet                                                                         ;
+			membershipExceptions = (
+				Info.plist,
+			)                                                                                                                            ;
+			target = 054B94502E36A7D1004377B3 /* CognitionCuratorWidgetExtension */                                                      ;
+		}                                                                                                                             ;
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		054B94572E36A7D1004377B3 /* CognitionCuratorWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup                                                                                    ;
+			exceptions = (
+				054B94672E36A7D3004377B3 /* Exceptions for "CognitionCuratorWidget" folder in "CognitionCuratorWidgetExtension" target */,
+			)                                                                                                                           ;
+			path = CognitionCuratorWidget                                                                                               ;
+			sourceTree = "<group>";
+		}                                                                                                                            ;
 		A90944C32E248E2C006C0B90 /* cognition.curator */ = {
-			isa = PBXFileSystemSynchronizedRootGroup                   ;
-			path = cognition.curator                                   ;
+			isa = PBXFileSystemSynchronizedRootGroup                                                                                    ;
+			path = cognition.curator                                                                                                    ;
 			sourceTree = "<group>";
-		}                                                           ;
+		}                                                                                                                            ;
 		A90944D22E248E2D006C0B90 /* cognition.curatorTests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup                   ;
-			path = cognition.curatorTests                              ;
+			isa = PBXFileSystemSynchronizedRootGroup                                                                                    ;
+			path = cognition.curatorTests                                                                                               ;
 			sourceTree = "<group>";
-		}                                                           ;
+		}                                                                                                                            ;
 		A90944DC2E248E2D006C0B90 /* cognition.curatorUITests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup                   ;
-			path = cognition.curatorUITests                            ;
+			isa = PBXFileSystemSynchronizedRootGroup                                                                                    ;
+			path = cognition.curatorUITests                                                                                             ;
 			sourceTree = "<group>";
-		}                                                           ;
+		}                                                                                                                            ;
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		054B944E2E36A7D1004377B3 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase                                      ;
+			buildActionMask = 2147483647                                       ;
+			files = (
+				054B94562E36A7D1004377B3 /* SwiftUI.framework in Frameworks */,
+				054B94542E36A7D1004377B3 /* WidgetKit.framework in Frameworks */,
+			)                                                                  ;
+			runOnlyForDeploymentPostprocessing = 0                             ;
+		}                                                                   ;
 		A90944BE2E248E2C006C0B90 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase                ;
-			buildActionMask = 2147483647                 ;
+			isa = PBXFrameworksBuildPhase                                      ;
+			buildActionMask = 2147483647                                       ;
 			files = (
-			)                                            ;
-			runOnlyForDeploymentPostprocessing = 0       ;
-		}                                             ;
+			)                                                                  ;
+			runOnlyForDeploymentPostprocessing = 0                             ;
+		}                                                                   ;
 		A90944CC2E248E2D006C0B90 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase                ;
-			buildActionMask = 2147483647                 ;
+			isa = PBXFrameworksBuildPhase                                      ;
+			buildActionMask = 2147483647                                       ;
 			files = (
-			)                                            ;
-			runOnlyForDeploymentPostprocessing = 0       ;
-		}                                             ;
+			)                                                                  ;
+			runOnlyForDeploymentPostprocessing = 0                             ;
+		}                                                                   ;
 		A90944D62E248E2D006C0B90 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase                ;
-			buildActionMask = 2147483647                 ;
+			isa = PBXFrameworksBuildPhase                                      ;
+			buildActionMask = 2147483647                                       ;
 			files = (
-			)                                            ;
-			runOnlyForDeploymentPostprocessing = 0       ;
-		}                                             ;
+			)                                                                  ;
+			runOnlyForDeploymentPostprocessing = 0                             ;
+		}                                                                   ;
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		054B94522E36A7D1004377B3 /* Frameworks */ = {
+			isa = PBXGroup                                                         ;
+			children = (
+				054B94532E36A7D1004377B3 /* WidgetKit.framework */,
+				054B94552E36A7D1004377B3 /* SwiftUI.framework */,
+			)                                                                      ;
+			name = Frameworks                                                      ;
+			sourceTree = "<group>";
+		}                                                                       ;
 		A90944B82E248E2C006C0B90 = {
-			isa = PBXGroup                                                   ;
+			isa = PBXGroup                                                         ;
 			children = (
 				A90944C32E248E2C006C0B90 /* cognition.curator */,
 				A90944D22E248E2D006C0B90 /* cognition.curatorTests */,
 				A90944DC2E248E2D006C0B90 /* cognition.curatorUITests */,
+				054B94572E36A7D1004377B3 /* CognitionCuratorWidget */,
+				054B94522E36A7D1004377B3 /* Frameworks */,
 				A90944C22E248E2C006C0B90 /* Products */,
-			)                                                                ;
+			)                                                                      ;
 			sourceTree = "<group>";
-		}                                                                 ;
+		}                                                                       ;
 		A90944C22E248E2C006C0B90 /* Products */ = {
-			isa = PBXGroup                                                   ;
+			isa = PBXGroup                                                         ;
 			children = (
 				A90944C12E248E2C006C0B90 /* cognition.curator.app */,
 				A90944CF2E248E2D006C0B90 /* cognition.curatorTests.xctest */,
 				A90944D92E248E2D006C0B90 /* cognition.curatorUITests.xctest */,
-			)                                                                ;
-			name = Products                                                  ;
+				054B94512E36A7D1004377B3 /* CognitionCuratorWidgetExtension.appex */,
+			)                                                                      ;
+			name = Products                                                        ;
 			sourceTree = "<group>";
-		}                                                                 ;
+		}                                                                       ;
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		054B94502E36A7D1004377B3 /* CognitionCuratorWidgetExtension */ = {
+			isa = PBXNativeTarget                                                                                                                  ;
+			buildConfigurationList = 054B94682E36A7D3004377B3 /* Build configuration list for PBXNativeTarget "CognitionCuratorWidgetExtension" */ ;
+			buildPhases = (
+				054B944D2E36A7D1004377B3 /* Sources */,
+				054B944E2E36A7D1004377B3 /* Frameworks */,
+				054B944F2E36A7D1004377B3 /* Resources */,
+			)                                                                                                                                      ;
+			buildRules = (
+			)                                                                                                                                      ;
+			dependencies = (
+			)                                                                                                                                      ;
+			fileSystemSynchronizedGroups = (
+				054B94572E36A7D1004377B3 /* CognitionCuratorWidget */,
+			)                                                                                                                                      ;
+			name = CognitionCuratorWidgetExtension                                                                                                 ;
+			packageProductDependencies = (
+			)                                                                                                                                      ;
+			productName = CognitionCuratorWidgetExtension                                                                                          ;
+			productReference = 054B94512E36A7D1004377B3 /* CognitionCuratorWidgetExtension.appex */                                                ;
+			productType = "com.apple.product-type.app-extension";
+		}                                                                                                                                       ;
 		A90944C02E248E2C006C0B90 /* cognition.curator */ = {
-			isa = PBXNativeTarget                                                                                                           ;
-			buildConfigurationList = A90944E32E248E2D006C0B90 /* Build configuration list for PBXNativeTarget "cognition.curator" */        ;
+			isa = PBXNativeTarget                                                                                                                  ;
+			buildConfigurationList = A90944E32E248E2D006C0B90 /* Build configuration list for PBXNativeTarget "cognition.curator" */               ;
 			buildPhases = (
 				A90944BD2E248E2C006C0B90 /* Sources */,
 				A90944BE2E248E2C006C0B90 /* Frameworks */,
 				A90944BF2E248E2C006C0B90 /* Resources */,
-			)                                                                                                                               ;
+				054B94642E36A7D3004377B3 /* Embed Foundation Extensions */,
+			)                                                                                                                                      ;
 			buildRules = (
-			)                                                                                                                               ;
+			)                                                                                                                                      ;
 			dependencies = (
-			)                                                                                                                               ;
+				054B94622E36A7D3004377B3 /* PBXTargetDependency */,
+			)                                                                                                                                      ;
 			fileSystemSynchronizedGroups = (
 				A90944C32E248E2C006C0B90 /* cognition.curator */,
-			)                                                                                                                               ;
-			name = cognition.curator                                                                                                        ;
+			)                                                                                                                                      ;
+			name = cognition.curator                                                                                                               ;
 			packageProductDependencies = (
-			)                                                                                                                               ;
-			productName = cognition.curator                                                                                                 ;
-			productReference = A90944C12E248E2C006C0B90 /* cognition.curator.app */                                                         ;
+			)                                                                                                                                      ;
+			productName = cognition.curator                                                                                                        ;
+			productReference = A90944C12E248E2C006C0B90 /* cognition.curator.app */                                                                ;
 			productType = "com.apple.product-type.application";
-		}                                                                                                                                ;
+		}                                                                                                                                       ;
 		A90944CE2E248E2D006C0B90 /* cognition.curatorTests */ = {
-			isa = PBXNativeTarget                                                                                                           ;
-			buildConfigurationList = A90944E62E248E2D006C0B90 /* Build configuration list for PBXNativeTarget "cognition.curatorTests" */   ;
+			isa = PBXNativeTarget                                                                                                                  ;
+			buildConfigurationList = A90944E62E248E2D006C0B90 /* Build configuration list for PBXNativeTarget "cognition.curatorTests" */          ;
 			buildPhases = (
 				A90944CB2E248E2D006C0B90 /* Sources */,
 				A90944CC2E248E2D006C0B90 /* Frameworks */,
 				A90944CD2E248E2D006C0B90 /* Resources */,
-			)                                                                                                                               ;
+			)                                                                                                                                      ;
 			buildRules = (
-			)                                                                                                                               ;
+			)                                                                                                                                      ;
 			dependencies = (
 				A90944D12E248E2D006C0B90 /* PBXTargetDependency */,
-			)                                                                                                                               ;
+			)                                                                                                                                      ;
 			fileSystemSynchronizedGroups = (
 				A90944D22E248E2D006C0B90 /* cognition.curatorTests */,
-			)                                                                                                                               ;
-			name = cognition.curatorTests                                                                                                   ;
+			)                                                                                                                                      ;
+			name = cognition.curatorTests                                                                                                          ;
 			packageProductDependencies = (
-			)                                                                                                                               ;
-			productName = cognition.curatorTests                                                                                            ;
-			productReference = A90944CF2E248E2D006C0B90 /* cognition.curatorTests.xctest */                                                 ;
+			)                                                                                                                                      ;
+			productName = cognition.curatorTests                                                                                                   ;
+			productReference = A90944CF2E248E2D006C0B90 /* cognition.curatorTests.xctest */                                                        ;
 			productType = "com.apple.product-type.bundle.unit-test";
-		}                                                                                                                                ;
+		}                                                                                                                                       ;
 		A90944D82E248E2D006C0B90 /* cognition.curatorUITests */ = {
-			isa = PBXNativeTarget                                                                                                           ;
-			buildConfigurationList = A90944E92E248E2D006C0B90 /* Build configuration list for PBXNativeTarget "cognition.curatorUITests" */ ;
+			isa = PBXNativeTarget                                                                                                                  ;
+			buildConfigurationList = A90944E92E248E2D006C0B90 /* Build configuration list for PBXNativeTarget "cognition.curatorUITests" */        ;
 			buildPhases = (
 				A90944D52E248E2D006C0B90 /* Sources */,
 				A90944D62E248E2D006C0B90 /* Frameworks */,
 				A90944D72E248E2D006C0B90 /* Resources */,
-			)                                                                                                                               ;
+			)                                                                                                                                      ;
 			buildRules = (
-			)                                                                                                                               ;
+			)                                                                                                                                      ;
 			dependencies = (
 				A90944DB2E248E2D006C0B90 /* PBXTargetDependency */,
-			)                                                                                                                               ;
+			)                                                                                                                                      ;
 			fileSystemSynchronizedGroups = (
 				A90944DC2E248E2D006C0B90 /* cognition.curatorUITests */,
-			)                                                                                                                               ;
-			name = cognition.curatorUITests                                                                                                 ;
+			)                                                                                                                                      ;
+			name = cognition.curatorUITests                                                                                                        ;
 			packageProductDependencies = (
-			)                                                                                                                               ;
-			productName = cognition.curatorUITests                                                                                          ;
-			productReference = A90944D92E248E2D006C0B90 /* cognition.curatorUITests.xctest */                                               ;
+			)                                                                                                                                      ;
+			productName = cognition.curatorUITests                                                                                                 ;
+			productReference = A90944D92E248E2D006C0B90 /* cognition.curatorUITests.xctest */                                                      ;
 			productType = "com.apple.product-type.bundle.ui-testing";
-		}                                                                                                                                ;
+		}                                                                                                                                       ;
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -170,9 +263,12 @@
 			isa = PBXProject                                                                                                    ;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1                                                                              ;
-				LastSwiftUpdateCheck = 1630                                                                                        ;
+				LastSwiftUpdateCheck = 1620                                                                                        ;
 				LastUpgradeCheck = 1630                                                                                            ;
 				TargetAttributes = {
+					054B94502E36A7D1004377B3 = {
+						CreatedOnToolsVersion = 16.2                                                                                     ;
+					}                                                                                                                 ;
 					A90944C02E248E2C006C0B90 = {
 						CreatedOnToolsVersion = 16.3                                                                                     ;
 					}                                                                                                                 ;
@@ -203,11 +299,19 @@
 				A90944C02E248E2C006C0B90 /* cognition.curator */,
 				A90944CE2E248E2D006C0B90 /* cognition.curatorTests */,
 				A90944D82E248E2D006C0B90 /* cognition.curatorUITests */,
+				054B94502E36A7D1004377B3 /* CognitionCuratorWidgetExtension */,
 			)                                                                                                                   ;
 		}                                                                                                                    ;
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		054B944F2E36A7D1004377B3 /* Resources */ = {
+			isa = PBXResourcesBuildPhase                ;
+			buildActionMask = 2147483647                ;
+			files = (
+			)                                           ;
+			runOnlyForDeploymentPostprocessing = 0      ;
+		}                                            ;
 		A90944BF2E248E2C006C0B90 /* Resources */ = {
 			isa = PBXResourcesBuildPhase                ;
 			buildActionMask = 2147483647                ;
@@ -232,6 +336,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		054B944D2E36A7D1004377B3 /* Sources */ = {
+			isa = PBXSourcesBuildPhase                ;
+			buildActionMask = 2147483647              ;
+			files = (
+			)                                         ;
+			runOnlyForDeploymentPostprocessing = 0    ;
+		}                                          ;
 		A90944BD2E248E2C006C0B90 /* Sources */ = {
 			isa = PBXSourcesBuildPhase                ;
 			buildActionMask = 2147483647              ;
@@ -256,19 +367,83 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		054B94622E36A7D3004377B3 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency                                               ;
+			target = 054B94502E36A7D1004377B3 /* CognitionCuratorWidgetExtension */ ;
+			targetProxy = 054B94612E36A7D3004377B3 /* PBXContainerItemProxy */      ;
+		}                                                                        ;
 		A90944D12E248E2D006C0B90 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency                                          ;
-			target = A90944C02E248E2C006C0B90 /* cognition.curator */          ;
-			targetProxy = A90944D02E248E2D006C0B90 /* PBXContainerItemProxy */ ;
-		}                                                                   ;
+			isa = PBXTargetDependency                                               ;
+			target = A90944C02E248E2C006C0B90 /* cognition.curator */               ;
+			targetProxy = A90944D02E248E2D006C0B90 /* PBXContainerItemProxy */      ;
+		}                                                                        ;
 		A90944DB2E248E2D006C0B90 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency                                          ;
-			target = A90944C02E248E2C006C0B90 /* cognition.curator */          ;
-			targetProxy = A90944DA2E248E2D006C0B90 /* PBXContainerItemProxy */ ;
-		}                                                                   ;
+			isa = PBXTargetDependency                                               ;
+			target = A90944C02E248E2C006C0B90 /* cognition.curator */               ;
+			targetProxy = A90944DA2E248E2D006C0B90 /* PBXContainerItemProxy */      ;
+		}                                                                        ;
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		054B94652E36A7D3004377B3 /* Debug */ = {
+			isa = XCBuildConfiguration                                                                                                                                                                                 ;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor                                                                                                                                              ;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground                                                                                                                                     ;
+				CODE_SIGN_STYLE = Automatic                                                                                                                                                                               ;
+				CURRENT_PROJECT_VERSION = 1                                                                                                                                                                               ;
+				DEVELOPMENT_TEAM = KF8643NB33                                                                                                                                                                             ;
+				GENERATE_INFOPLIST_FILE = YES                                                                                                                                                                             ;
+				INFOPLIST_FILE = CognitionCuratorWidget/Info.plist                                                                                                                                                        ;
+				INFOPLIST_KEY_CFBundleDisplayName = CognitionCuratorWidget                                                                                                                                                ;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2                                                                                                                                                                         ;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				)                                                                                                                                                                                                         ;
+				MARKETING_VERSION = 1.0                                                                                                                                                                                   ;
+				PRODUCT_BUNDLE_IDENTIFIER = "collect.software.cognition-curator.CognitionCuratorWidget";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos                                                                                                                                                                                        ;
+				SKIP_INSTALL = YES                                                                                                                                                                                        ;
+				SWIFT_EMIT_LOC_STRINGS = YES                                                                                                                                                                              ;
+				SWIFT_VERSION = 5.0                                                                                                                                                                                       ;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			}                                                                                                                                                                                                          ;
+			name = Debug                                                                                                                                                                                               ;
+		}                                                                                                                                                                                                           ;
+		054B94662E36A7D3004377B3 /* Release */ = {
+			isa = XCBuildConfiguration                                                                                                                                                                                 ;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor                                                                                                                                              ;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground                                                                                                                                     ;
+				CODE_SIGN_STYLE = Automatic                                                                                                                                                                               ;
+				CURRENT_PROJECT_VERSION = 1                                                                                                                                                                               ;
+				DEVELOPMENT_TEAM = KF8643NB33                                                                                                                                                                             ;
+				GENERATE_INFOPLIST_FILE = YES                                                                                                                                                                             ;
+				INFOPLIST_FILE = CognitionCuratorWidget/Info.plist                                                                                                                                                        ;
+				INFOPLIST_KEY_CFBundleDisplayName = CognitionCuratorWidget                                                                                                                                                ;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2                                                                                                                                                                         ;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				)                                                                                                                                                                                                         ;
+				MARKETING_VERSION = 1.0                                                                                                                                                                                   ;
+				PRODUCT_BUNDLE_IDENTIFIER = "collect.software.cognition-curator.CognitionCuratorWidget";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos                                                                                                                                                                                        ;
+				SKIP_INSTALL = YES                                                                                                                                                                                        ;
+				SWIFT_EMIT_LOC_STRINGS = YES                                                                                                                                                                              ;
+				SWIFT_VERSION = 5.0                                                                                                                                                                                       ;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES                                                                                                                                                                                    ;
+			}                                                                                                                                                                                                          ;
+			name = Release                                                                                                                                                                                             ;
+		}                                                                                                                                                                                                           ;
 		A90944E12E248E2D006C0B90 /* Debug */ = {
 			isa = XCBuildConfiguration                                                                                                                                                                                 ;
 			buildSettings = {
@@ -398,6 +573,8 @@
 				ENABLE_PREVIEWS = YES                                                                                                                                                                                     ;
 				GENERATE_INFOPLIST_FILE = YES                                                                                                                                                                             ;
 				INFOPLIST_KEY_CFBundleDisplayName = "Recollect AI";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO                                                                                                                                                          ;
+				INFOPLIST_KEY_CFBundleURLTypes = "{ CFBundleURLName = \"cognition-curator-deeplink\"; CFBundleURLSchemes = ( \"cognitioncurator\" ); }";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES                                                                                                                                ;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES                                                                                                                         ;
@@ -407,7 +584,6 @@
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES                                                                                                                                     ;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault                                                                                                                                 ;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault                                                                                                                          ;
-				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO                                                                                                                                                          ;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				IPHONEOS_DEPLOYMENT_TARGET = 18.4                                                                                                                                                                         ;
@@ -441,6 +617,7 @@
 				ENABLE_PREVIEWS = YES                                                                                                                                                                                     ;
 				GENERATE_INFOPLIST_FILE = YES                                                                                                                                                                             ;
 				INFOPLIST_KEY_CFBundleDisplayName = "Recollect AI";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO                                                                                                                                                          ;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES                                                                                                                                ;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES                                                                                                                         ;
@@ -450,7 +627,6 @@
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES                                                                                                                                     ;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault                                                                                                                                 ;
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault                                                                                                                          ;
-				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO                                                                                                                                                          ;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				IPHONEOS_DEPLOYMENT_TARGET = 18.4                                                                                                                                                                         ;
@@ -564,43 +740,52 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		054B94682E36A7D3004377B3 /* Build configuration list for PBXNativeTarget "CognitionCuratorWidgetExtension" */ = {
+			isa = XCConfigurationList                                                                                        ;
+			buildConfigurations = (
+				054B94652E36A7D3004377B3 /* Debug */,
+				054B94662E36A7D3004377B3 /* Release */,
+			)                                                                                                                ;
+			defaultConfigurationIsVisible = 0                                                                                ;
+			defaultConfigurationName = Release                                                                               ;
+		}                                                                                                                 ;
 		A90944BC2E248E2C006C0B90 /* Build configuration list for PBXProject "cognition.curator" */ = {
-			isa = XCConfigurationList                                                                                 ;
+			isa = XCConfigurationList                                                                                        ;
 			buildConfigurations = (
 				A90944E12E248E2D006C0B90 /* Debug */,
 				A90944E22E248E2D006C0B90 /* Release */,
-			)                                                                                                         ;
-			defaultConfigurationIsVisible = 0                                                                         ;
-			defaultConfigurationName = Release                                                                        ;
-		}                                                                                                          ;
+			)                                                                                                                ;
+			defaultConfigurationIsVisible = 0                                                                                ;
+			defaultConfigurationName = Release                                                                               ;
+		}                                                                                                                 ;
 		A90944E32E248E2D006C0B90 /* Build configuration list for PBXNativeTarget "cognition.curator" */ = {
-			isa = XCConfigurationList                                                                                 ;
+			isa = XCConfigurationList                                                                                        ;
 			buildConfigurations = (
 				A90944E42E248E2D006C0B90 /* Debug */,
 				A90944E52E248E2D006C0B90 /* Release */,
-			)                                                                                                         ;
-			defaultConfigurationIsVisible = 0                                                                         ;
-			defaultConfigurationName = Release                                                                        ;
-		}                                                                                                          ;
+			)                                                                                                                ;
+			defaultConfigurationIsVisible = 0                                                                                ;
+			defaultConfigurationName = Release                                                                               ;
+		}                                                                                                                 ;
 		A90944E62E248E2D006C0B90 /* Build configuration list for PBXNativeTarget "cognition.curatorTests" */ = {
-			isa = XCConfigurationList                                                                                 ;
+			isa = XCConfigurationList                                                                                        ;
 			buildConfigurations = (
 				A90944E72E248E2D006C0B90 /* Debug */,
 				A90944E82E248E2D006C0B90 /* Release */,
-			)                                                                                                         ;
-			defaultConfigurationIsVisible = 0                                                                         ;
-			defaultConfigurationName = Release                                                                        ;
-		}                                                                                                          ;
+			)                                                                                                                ;
+			defaultConfigurationIsVisible = 0                                                                                ;
+			defaultConfigurationName = Release                                                                               ;
+		}                                                                                                                 ;
 		A90944E92E248E2D006C0B90 /* Build configuration list for PBXNativeTarget "cognition.curatorUITests" */ = {
-			isa = XCConfigurationList                                                                                 ;
+			isa = XCConfigurationList                                                                                        ;
 			buildConfigurations = (
 				A90944EA2E248E2D006C0B90 /* Debug */,
 				A90944EB2E248E2D006C0B90 /* Release */,
-			)                                                                                                         ;
-			defaultConfigurationIsVisible = 0                                                                         ;
-			defaultConfigurationName = Release                                                                        ;
-		}                                                                                                          ;
+			)                                                                                                                ;
+			defaultConfigurationIsVisible = 0                                                                                ;
+			defaultConfigurationName = Release                                                                               ;
+		}                                                                                                                 ;
 /* End XCConfigurationList section */
-	}                                                                                                           ;
-	rootObject = A90944B92E248E2C006C0B90 /* Project object */                                                  ;
+	}                                                                                                                  ;
+	rootObject = A90944B92E248E2C006C0B90 /* Project object */                                                         ;
 }

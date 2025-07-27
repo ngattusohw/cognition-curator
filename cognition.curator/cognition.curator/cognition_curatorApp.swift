@@ -48,6 +48,18 @@ struct cognition_curatorApp: App {
                     deepLinkHandler.handle(url: url)
                 }
             }
+            .onAppear {
+                // Update widget data when app launches
+                if authService.isAuthenticated {
+                    WidgetDataService.shared.refreshOnAppLaunch()
+                }
+            }
+            .onChange(of: authService.isAuthenticated) { isAuthenticated in
+                if isAuthenticated {
+                    // Update widget data when user logs in
+                    WidgetDataService.shared.refreshOnAppLaunch()
+                }
+            }
         }
     }
 }

@@ -44,6 +44,9 @@ struct ReviewView: View {
                             } else {
                                 print("⚠️ ReviewView: No cards reviewed, skipping sync")
                             }
+
+                            // Update widget data after review completion
+                            WidgetDataService.shared.refreshAfterReview()
                         }
                 } else {
                     reviewSessionView

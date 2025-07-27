@@ -332,6 +332,10 @@ struct AddCardView: View {
                 }
 
                 isCreating = false
+
+                // Update widget data after adding new card
+                WidgetDataService.shared.refreshAfterAddingCards()
+
                 dismiss()
             }
         } catch {

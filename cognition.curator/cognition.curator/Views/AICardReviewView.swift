@@ -574,6 +574,10 @@ struct AICardReviewView: View {
                     }
 
                     isCreatingDeck = false
+
+                    // Update widget data after creating AI deck with cards
+                    WidgetDataService.shared.refreshAfterAddingCards()
+
                     onDeckCreated() // Signal deck creation completion
                     dismiss()
                 }
