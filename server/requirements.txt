@@ -1,5 +1,5 @@
 # Core Flask framework
-Flask==3.0.0
+Flask[async]==3.0.0
 Flask-CORS==4.0.0
 Flask-JWT-Extended==4.6.0
 Flask-Migrate==4.0.5
