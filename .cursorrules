@@ -1,0 +1,107 @@
+# Cognition Curator - Development Rules
+
+## Core Principle: Maximum AI Agency, Minimum Human Intervention
+
+Deliver correct, working code on the first attempt, minimizing human debugging and iteration.
+
+## Pre-Delivery Validation Protocol
+
+### MANDATORY: Always validate before presenting solutions
+
+1. **Manual Code Review** - Check for obvious compilation errors
+2. **Test critical user paths** - Verify the specific functionality being implemented
+3. **Check for common SwiftUI issues** - Naming conflicts, force unwrapping, etc.
+4. **Only present solutions after validation**
+
+### Validation Approach
+
+- **Primary**: Manual code review and targeted testing
+- **Secondary**: `./quick_validate.sh` for fast compilation checks when needed
+- **Avoid**: Complex automated scripts that depend on simulators (they hang/crash)
+
+## SwiftUI Development Rules
+
+### Critical Issues to Always Check
+
+1. **SwiftUI Naming Conflicts** - Custom views shadowing built-in SwiftUI components
+
+   - Common conflicts: `ProgressView`, `Button`, `Text`, `Image`, `List`
+   - Use descriptive names: `ProgressStatsView`, `CardButton`, etc.
+
+2. **ProgressView Style Usage**
+
+   - ❌ `LinearProgressViewStyle()` - deprecated
+   - ✅ `.progressViewStyle(.linear)` - correct syntax
+
+3. **Core Data Integration**
+
+   - Use `@FetchRequest` for automatic UI updates
+   - Implement cascade delete rules
+   - Use optional chaining: `deck.name ?? ""`
+
+4. **State Management**
+   - Use `@State` for local view state
+   - Use `@Environment(\.managedObjectContext)` for Core Data
+   - Avoid force unwrapping in UI code
+
+## Running Todo List System
+
+### Todo List Management
+
+- **Persistent Todo Tracking**: Maintain a running list of tasks across agent sessions
+- **Auto-Detection**: When user mentions "later", "todo", "reminder", "need to", automatically add to list
+- **Completion Tracking**: Mark items complete when accomplished
+- **Priority Awareness**: Carry forward uncompleted items to future sessions
+
+### Todo List Commands for Agents
+
+- **Add Item**: When user says "remind me to..." or "we need to..." → add to todo list
+- **Mark Complete**: When task is finished → mark as completed
+- **Show Progress**: Include todo status in project updates
+- **Carry Forward**: Always check existing todos before starting new work
+
+### Current Project Todos
+
+🔄 **Active Todos** (auto-managed by agents):
+
+- [ ] [Add new todos here as they come up]
+
+✅ **Completed** (recent accomplishments):
+
+- [Completed items will appear here]
+
+❌ **Cancelled/Deprioritized**:
+
+- [Items no longer needed]
+
+## Architecture Patterns That Work
+
+### Core Data
+
+- Use `@FetchRequest` for automatic UI updates
+- Save context after significant operations
+- Test data integrity in unit tests
+
+### Navigation
+
+- TabView with `@State selectedTab` in ContentView
+- Pass `selectedTab` binding to child views
+- Use `selectedTab = index` for programmatic navigation
+
+### Common Patterns
+
+- **Card Flip Animations**: Use scale/opacity instead of 3D rotation
+- **Review Flow**: Reset state variables when moving between cards
+- **Button Actions**: Always implement actual functionality, never empty `{}`
+
+## Success Metrics
+
+- Code compiles on first try
+- Features work as expected immediately
+- No empty action blocks or placeholder code
+- Proper state management and navigation
+- Todo items tracked and completed systematically
+
+---
+
+**Remember**: Manual validation is faster and more reliable than complex automation. Focus on delivering working code immediately rather than perfect tooling.
