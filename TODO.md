@@ -10,3 +10,4 @@
 - Improve UX when clicking delete during AI generated deck review - show a card reject/deleted toast and make it clear we're going to next card for review
 - shuffle the cards
 - Make daily and accuracy trends in the learning trends section display actual data instead of placeholder/empty charts
+- Fix Recent Activity section to show meaningful user activities instead of "no activity"

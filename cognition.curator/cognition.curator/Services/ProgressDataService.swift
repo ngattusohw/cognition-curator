@@ -117,14 +117,47 @@ class ProgressDataService: ObservableObject {
             )
         }
 
-        // Map recent activities from study sessions
-        let recentActivities = dashboard.recentSessions.prefix(5).map { session -> RecentActivity in
+        // Map recent activities from study sessions with enhanced descriptions
+        let recentActivities = dashboard.recentSessions.prefix(8).enumerated().compactMap { (index, session) -> RecentActivity? in
             let sessionDate = dateFormatter.date(from: session.startedAt) ?? Date()
+
+            // Create more descriptive titles based on session data
+            let title: String
+            let type: ActivityType
+            let count: Int?
+
+            if session.cardsReviewed > 0 {
+                let accuracyText = session.accuracyRate > 0.9 ? " with excellent accuracy" :
+                                 session.accuracyRate > 0.8 ? " with good accuracy" :
+                                 session.accuracyRate > 0.7 ? " with fair accuracy" : ""
+
+                title = session.cardsReviewed == 1 ?
+                    "Reviewed 1 card\(accuracyText)" :
+                    "Reviewed \(session.cardsReviewed) cards\(accuracyText)"
+                type = .review
+                count = session.cardsReviewed
+            } else {
+                // Study session without card reviews
+                title = "Study session (\(session.durationMinutes) min)"
+                type = .study
+                count = session.durationMinutes
+            }
+
             return RecentActivity(
-                type: .review,
-                title: "Reviewed \(session.cardsReviewed) cards",
+                type: type,
+                title: title,
                 time: sessionDate,
-                count: session.cardsReviewed
+                count: count
+            )
+        }
+
+        // Add insights as activities if available
+        let insightActivities = dashboard.insights.prefix(2).map { insight in
+            RecentActivity(
+                type: .practice,
+                title: insight.title,
+                time: Date(), // Insights don't have timestamps, use current time
+                count: nil
             )
         }
 
@@ -153,7 +186,7 @@ class ProgressDataService: ObservableObject {
                 sessionCount: dashboard.weeklySummary.sessionCount
             ),
             dailyStats: dailyStats,
-            recentActivities: Array(recentActivities),
+            recentActivities: Array(recentActivities) + insightActivities,
             topDecks: topDecks
         )
     }
@@ -171,9 +204,12 @@ class ProgressDataService: ObservableObject {
         }.reversed()
 
         let mockActivities = [
-            RecentActivity(type: .review, title: "Reviewed Biology deck", time: Date(), count: 25),
-            RecentActivity(type: .create, title: "Created new card", time: Date().addingTimeInterval(-3600), count: nil),
-            RecentActivity(type: .review, title: "Reviewed Math deck", time: Date().addingTimeInterval(-7200), count: 15)
+            RecentActivity(type: .review, title: "Reviewed 24 cards with excellent accuracy", time: Date().addingTimeInterval(-1800), count: 24),
+            RecentActivity(type: .deckCreated, title: "Created deck 'Spanish Vocabulary'", time: Date().addingTimeInterval(-3600), count: nil),
+            RecentActivity(type: .cardAdded, title: "Added 5 cards to Biology", time: Date().addingTimeInterval(-5400), count: 5),
+            RecentActivity(type: .aiGenerated, title: "Generated 10 AI cards for History", time: Date().addingTimeInterval(-7200), count: 10),
+            RecentActivity(type: .review, title: "Reviewed 15 cards with good accuracy", time: Date().addingTimeInterval(-9000), count: 15),
+            RecentActivity(type: .streakAchieved, title: "Achieved 7-day streak! 🎉", time: Date().addingTimeInterval(-86400), count: 7)
         ]
 
         progressData = ProgressData(

@@ -381,7 +381,8 @@ struct ProgressStatsView: View {
             }
 
             LazyVStack(spacing: 12) {
-                if let activities = progressDataService.progressData?.recentActivities, !activities.isEmpty {
+                let activities = combinedRecentActivities
+                if !activities.isEmpty {
                     ForEach(activities.indices, id: \.self) { index in
                         ActivityRowView(activity: activities[index])
                     }
@@ -398,6 +399,130 @@ struct ProgressStatsView: View {
                 }
             }
         }
+    }
+
+    // MARK: - Enhanced Recent Activities
+
+    private var combinedRecentActivities: [RecentActivity] {
+        var activities: [RecentActivity] = []
+
+        // First try to get activities from online data
+        if let onlineActivities = progressDataService.progressData?.recentActivities {
+            activities.append(contentsOf: onlineActivities)
+        }
+
+        // Add activities from offline/local data
+        activities.append(contentsOf: generateLocalActivities())
+
+        // Sort by time and take the most recent 10
+        return Array(activities.sorted { $0.time > $1.time }.prefix(10))
+    }
+
+    private func generateLocalActivities() -> [RecentActivity] {
+        var activities: [RecentActivity] = []
+        let calendar = Calendar.current
+        let twoDaysAgo = calendar.date(byAdding: .day, value: -2, to: Date()) ?? Date()
+
+        // Recent review sessions from Core Data
+        let reviewRequest: NSFetchRequest<ReviewSession> = ReviewSession.fetchRequest()
+        reviewRequest.predicate = NSPredicate(format: "reviewedAt >= %@", twoDaysAgo as NSDate)
+        reviewRequest.sortDescriptors = [NSSortDescriptor(keyPath: \ReviewSession.reviewedAt, ascending: false)]
+        reviewRequest.fetchLimit = 10
+
+        do {
+            let recentReviews = try viewContext.fetch(reviewRequest)
+            let reviewGroups = Dictionary(grouping: recentReviews) { review in
+                calendar.startOfDay(for: review.reviewedAt ?? Date())
+            }
+
+            for (date, reviews) in reviewGroups.prefix(5) {
+                let cardCount = reviews.count
+                let deckNames = Set(reviews.compactMap { $0.flashcard?.deck?.name }).joined(separator: ", ")
+
+                activities.append(RecentActivity(
+                    type: .review,
+                    title: cardCount == 1 ?
+                        "Reviewed 1 card\(deckNames.isEmpty ? "" : " from \(deckNames)")" :
+                        "Reviewed \(cardCount) cards\(deckNames.isEmpty ? "" : " from \(deckNames)")",
+                    time: reviews.first?.reviewedAt ?? date,
+                    count: cardCount
+                ))
+            }
+        } catch {
+            print("❌ Error fetching recent reviews: \(error)")
+        }
+
+        // Recent deck creations
+        let deckRequest: NSFetchRequest<Deck> = Deck.fetchRequest()
+        deckRequest.predicate = NSPredicate(format: "createdAt >= %@", twoDaysAgo as NSDate)
+        deckRequest.sortDescriptors = [NSSortDescriptor(keyPath: \Deck.createdAt, ascending: false)]
+        deckRequest.fetchLimit = 5
+
+        do {
+            let recentDecks = try viewContext.fetch(deckRequest)
+            for deck in recentDecks {
+                activities.append(RecentActivity(
+                    type: .deckCreated,
+                    title: "Created deck '\(deck.name ?? "Unknown")'",
+                    time: deck.createdAt ?? Date(),
+                    count: nil
+                ))
+            }
+        } catch {
+            print("❌ Error fetching recent decks: \(error)")
+        }
+
+        // Recent card additions
+        let cardRequest: NSFetchRequest<Flashcard> = Flashcard.fetchRequest()
+        cardRequest.predicate = NSPredicate(format: "createdAt >= %@", twoDaysAgo as NSDate)
+        cardRequest.sortDescriptors = [NSSortDescriptor(keyPath: \Flashcard.createdAt, ascending: false)]
+        cardRequest.fetchLimit = 20
+
+        do {
+            let recentCards = try viewContext.fetch(cardRequest)
+
+            // Group cards by date and deck name
+            struct CardGroupKey: Hashable {
+                let date: Date
+                let deckName: String
+            }
+
+            let cardGroups = Dictionary(grouping: recentCards) { card in
+                CardGroupKey(
+                    date: calendar.startOfDay(for: card.createdAt ?? Date()),
+                    deckName: card.deck?.name ?? "Unknown"
+                )
+            }
+
+            for (groupKey, cards) in cardGroups.prefix(3) {
+                let cardCount = cards.count
+                activities.append(RecentActivity(
+                    type: .cardAdded,
+                    title: cardCount == 1 ?
+                        "Added 1 card to \(groupKey.deckName)" :
+                        "Added \(cardCount) cards to \(groupKey.deckName)",
+                    time: cards.first?.createdAt ?? groupKey.date,
+                    count: cardCount
+                ))
+            }
+        } catch {
+            print("❌ Error fetching recent cards: \(error)")
+        }
+
+        // Check for streak achievements
+        if let streak = currentProgressData?.currentStreak, streak > 0 {
+            // Add streak activity if it's a milestone (every 7 days)
+            if streak % 7 == 0 && streak <= 30 {
+                activities.append(RecentActivity(
+                    type: .streakAchieved,
+                    title: "Achieved \(streak)-day streak! 🎉",
+                    time: Date(),
+                    count: streak
+                ))
+            }
+        }
+
+        return activities
     }
 
 
@@ -724,12 +849,25 @@ enum Timeframe: CaseIterable {
 }
 
 enum ActivityType {
-    case review, create
+    case review
+    case create
+    case deckCreated
+    case cardAdded
+    case aiGenerated
+    case streakAchieved
+    case study
+    case practice
 
     var icon: String {
         switch self {
         case .review: return "brain.head.profile"
         case .create: return "plus.circle"
+        case .deckCreated: return "rectangle.stack.badge.plus"
+        case .cardAdded: return "plus.rectangle.on.rectangle"
+        case .aiGenerated: return "wand.and.stars"
+        case .streakAchieved: return "flame.fill"
+        case .study: return "book.fill"
+        case .practice: return "repeat.circle.fill"
         }
     }
 
@@ -737,6 +875,12 @@ enum ActivityType {
         switch self {
         case .review: return .blue
         case .create: return .green
+        case .deckCreated: return .purple
+        case .cardAdded: return .green
+        case .aiGenerated: return .orange
+        case .streakAchieved: return .red
+        case .study: return .blue
+        case .practice: return .cyan
         }
     }
 }
