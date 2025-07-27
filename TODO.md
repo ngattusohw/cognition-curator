@@ -6,5 +6,5 @@
 - home button when on the deck screen doesnt work
 - should have the ability to silence a deck to stop showing the cards from it
 - fix retry in the ai gen review -- adds variation 1 a bunch
-- need to make partial reviews save properly -- in the review state if i only do like 2 cards, then it wont save
+
 ## COMPLETE
