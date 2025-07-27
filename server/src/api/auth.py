@@ -6,7 +6,6 @@ from datetime import datetime, timezone
 
 import jwt as jwt_lib
 import requests
-from cryptography.hazmat.primitives import serialization
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required
 
@@ -29,7 +28,6 @@ def apple_signin():
             return jsonify({"error": "Apple identity token required"}), 400
 
         identity_token = data["identity_token"]
-        authorization_code = data.get("authorization_code")
         user_info = data.get("user", {})  # Only available on first sign in
 
         # Verify and decode the Apple ID token
@@ -43,7 +41,9 @@ def apple_signin():
         email_verified = decoded_token.get("email_verified", False)
 
         # Check if user exists
+        print(f"[DEBUG] Looking for user with apple_id: {apple_user_id}")
         user = User.query.filter_by(apple_id=apple_user_id).first()
+        print(f"[DEBUG] User found: {user is not None}")
 
         if user:
             # Existing user - update login time
