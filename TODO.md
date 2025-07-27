@@ -6,5 +6,5 @@
 - home button when on the deck screen doesnt work
 - should have the ability to silence a deck to stop showing the cards from it
 - fix retry in the ai gen review -- adds variation 1 a bunch
-
+- shuffle the cards
 ## COMPLETE
