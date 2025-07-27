@@ -1,11 +1,14 @@
 {
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
-    "builder": "NIXPACKS"
+    "builder": "nixpacks",
+    "buildCommand": "pip install -r requirements.txt"
   },
   "deploy": {
-    "startCommand": "gunicorn --bind 0.0.0.0:8080 --workers 2 --worker-class sync --timeout 120 --access-logfile - --error-logfile - --log-level info src.app:app",
-    "restartPolicyType": "ON_FAILURE",
+    "startCommand": "python -m flask db upgrade && gunicorn --bind 0.0.0.0:$PORT --workers 2 --worker-class sync --timeout 120 --access-logfile - --error-logfile - --log-level info src.app:app",
+    "healthcheckPath": "/health",
+    "healthcheckTimeout": 300,
+    "restartPolicyType": "on_failure",
     "restartPolicyMaxRetries": 3
   }
 }

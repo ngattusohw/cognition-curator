@@ -1,4 +1,4 @@
-version: '3.8'
+# version: '3.8'  # Removed to avoid obsolete warning
 
 services:
   # Main Flask application
@@ -7,7 +7,7 @@ services:
       context: .
       target: development
     ports:
-      - "5000:5000"
+      - '5000:5000'
     environment:
       - FLASK_ENV=development
       - FLASK_DEBUG=True
@@ -17,7 +17,7 @@ services:
       - CELERY_RESULT_BACKEND=redis://redis:6379/3
     volumes:
       - .:/app
-      - /app/venv  # Anonymous volume to avoid overwriting venv
+      - /app/venv # Anonymous volume to avoid overwriting venv
     depends_on:
       - db
       - redis
@@ -35,7 +35,7 @@ services:
       - POSTGRES_USER=cognition_user
       - POSTGRES_PASSWORD=cognition_pass
     ports:
-      - "5432:5432"
+      - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./scripts/db/init.sql:/docker-entrypoint-initdb.d/init.sql
@@ -46,7 +46,7 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - '6379:6379'
     volumes:
       - redis_data:/data
     networks:
@@ -98,7 +98,7 @@ services:
       context: .
       target: development
     ports:
-      - "5555:5555"
+      - '5555:5555'
     environment:
       - CELERY_BROKER_URL=redis://redis:6379/2
       - CELERY_RESULT_BACKEND=redis://redis:6379/3
@@ -115,7 +115,7 @@ services:
       - PGADMIN_DEFAULT_EMAIL=admin@cognition-curator.com
       - PGADMIN_DEFAULT_PASSWORD=admin
     ports:
-      - "5050:80"
+      - '5050:80'
     depends_on:
       - db
     networks:
@@ -125,7 +125,7 @@ services:
   mock-ai:
     image: wiremock/wiremock:latest
     ports:
-      - "8080:8080"
+      - '8080:8080'
     volumes:
       - ./tests/fixtures/wiremock:/home/wiremock
     command: --global-response-templating
@@ -138,4 +138,4 @@ volumes:
 
 networks:
   cognition-network:
-    driver: bridge 
+    driver: bridge
