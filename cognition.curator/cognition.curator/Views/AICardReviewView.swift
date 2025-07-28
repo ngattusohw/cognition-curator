@@ -142,11 +142,11 @@ struct AICardReviewView: View {
                 // Card Preview
                 cardPreview(card: card)
 
-                // Card Details
-                cardDetails(card: card)
-
-                // Individual Actions
+                // Individual Actions (moved above Card Details)
                 individualActions(for: card)
+
+                // Card Details (moved below Individual Actions)
+                cardDetails(card: card)
 
                 Spacer(minLength: 100)
             }
