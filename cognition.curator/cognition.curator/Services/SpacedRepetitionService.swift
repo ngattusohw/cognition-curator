@@ -189,8 +189,61 @@ class SpacedRepetitionService {
         return learningSessions.count
     }
 
+        // MARK: - Silence Management
+
+    func checkAndUpdateExpiredSilences(context: NSManagedObjectContext) {
+        let request: NSFetchRequest<Deck> = Deck.fetchRequest()
+        request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
+            NSPredicate(format: "isSilenced == YES"),
+            NSPredicate(format: "silenceType == %@", "temporary"),
+            NSPredicate(format: "silenceEndDate != nil"),
+            NSPredicate(format: "silenceEndDate <= %@", Date() as NSDate)
+        ])
+
+        do {
+            let expiredDecks = try context.fetch(request)
+            var unsilencedCount = 0
+
+            for deck in expiredDecks {
+                deck.unsilence()
+                unsilencedCount += 1
+                print("🔊 Auto-unsilenced deck: \(deck.name ?? "Unknown") - silence expired")
+            }
+
+            if unsilencedCount > 0 {
+                try context.save()
+                print("✅ Auto-unsilenced \(unsilencedCount) deck(s) with expired temporary silence")
+            }
+        } catch {
+            print("❌ Error checking for expired silences: \(error)")
+        }
+    }
+
+    // MARK: - Silence Filtering Helper
+
+    private func silencedDeckFilterPredicate() -> NSPredicate {
+        let now = Date()
+
+        return NSCompoundPredicate(orPredicateWithSubpredicates: [
+            // Deck is not silenced
+            NSPredicate(format: "deck.isSilenced == NO"),
+            // Deck is silenced but silence is nil (shouldn't happen but safety)
+            NSPredicate(format: "deck.isSilenced == YES AND deck.silenceType == nil"),
+            // Deck has temporary silence that has expired
+            NSCompoundPredicate(andPredicateWithSubpredicates: [
+                NSPredicate(format: "deck.isSilenced == YES"),
+                NSPredicate(format: "deck.silenceType == %@", "temporary"),
+                NSPredicate(format: "deck.silenceEndDate != nil"),
+                NSPredicate(format: "deck.silenceEndDate <= %@", now as NSDate)
+            ])
+        ])
+    }
+
     // MARK: - Get Cards for Review (Enhanced)
     func getCardsForTodaySession(context: NSManagedObjectContext, limit: Int? = nil, force: Bool = false, mode: ReviewMode? = nil) -> [Flashcard] {
+        // Check for expired silences before getting cards
+        checkAndUpdateExpiredSilences(context: context)
+
         let reviewMode = mode ?? currentReviewMode
         let actualLimit = limit ?? (reviewMode == .cram ? 50 : 20)
 
@@ -214,13 +267,21 @@ class SpacedRepetitionService {
 
         // First get new cards (prioritize these)
         let newRequest: NSFetchRequest<Flashcard> = Flashcard.fetchRequest()
-        newRequest.predicate = NSPredicate(format: "reviewSessions.@count == 0")
+        let newCardPredicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
+            NSPredicate(format: "reviewSessions.@count == 0"),
+            silencedDeckFilterPredicate()
+        ])
+        newRequest.predicate = newCardPredicate
         newRequest.sortDescriptors = [NSSortDescriptor(keyPath: \Flashcard.createdAt, ascending: true)]
         newRequest.fetchLimit = min(limit, maxNewCardsPerDay)
 
         // Then get due cards
         let dueRequest: NSFetchRequest<Flashcard> = Flashcard.fetchRequest()
-        dueRequest.predicate = NSPredicate(format: "ANY reviewSessions.nextReview <= %@", now as NSDate)
+        let dueCardPredicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
+            NSPredicate(format: "ANY reviewSessions.nextReview <= %@", now as NSDate),
+            silencedDeckFilterPredicate()
+        ])
+        dueRequest.predicate = dueCardPredicate
         dueRequest.sortDescriptors = [NSSortDescriptor(keyPath: \Flashcard.createdAt, ascending: true)]
         dueRequest.fetchLimit = limit
 
@@ -256,11 +317,16 @@ class SpacedRepetitionService {
         let threeDaysAgo = Calendar.current.date(byAdding: .day, value: -3, to: now) ?? now
         let request: NSFetchRequest<Flashcard> = Flashcard.fetchRequest()
 
-        // Get due cards + cards reviewed in last 3 days
-        request.predicate = NSCompoundPredicate(orPredicateWithSubpredicates: [
+        // Get due cards + cards reviewed in last 3 days, excluding silenced decks
+        let practiceCardsPredicate = NSCompoundPredicate(orPredicateWithSubpredicates: [
             NSPredicate(format: "reviewSessions.@count == 0"), // New cards
             NSPredicate(format: "ANY reviewSessions.nextReview <= %@", now as NSDate), // Due cards
             NSPredicate(format: "ANY reviewSessions.reviewedAt >= %@", threeDaysAgo as NSDate) // Recent cards
+        ])
+
+        request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
+            practiceCardsPredicate,
+            silencedDeckFilterPredicate()
         ])
 
         request.sortDescriptors = [
@@ -282,6 +348,7 @@ class SpacedRepetitionService {
 
     private func getCramCards(context: NSManagedObjectContext, limit: Int) -> [Flashcard] {
         let request: NSFetchRequest<Flashcard> = Flashcard.fetchRequest()
+        request.predicate = silencedDeckFilterPredicate()
         request.sortDescriptors = [
             NSSortDescriptor(keyPath: \Flashcard.createdAt, ascending: false) // Newest first for cram
         ]
@@ -301,6 +368,7 @@ class SpacedRepetitionService {
 
     private func getRecentCards(context: NSManagedObjectContext, limit: Int) -> [Flashcard] {
         let request: NSFetchRequest<Flashcard> = Flashcard.fetchRequest()
+        request.predicate = silencedDeckFilterPredicate()
         request.fetchLimit = limit
         request.sortDescriptors = [NSSortDescriptor(keyPath: \Flashcard.createdAt, ascending: false)]
 
@@ -317,39 +385,50 @@ class SpacedRepetitionService {
     }
 
     // MARK: - Deck-Specific Review Methods
-    func getCardsFromDecks(context: NSManagedObjectContext, deckIds: [UUID], mode: ReviewMode = .normal, limit: Int = 50) -> [Flashcard] {
+    func getCardsFromDecks(context: NSManagedObjectContext, deckIds: [UUID], mode: ReviewMode = .normal, limit: Int = 50, respectSilence: Bool = false) -> [Flashcard] {
         let request: NSFetchRequest<Flashcard> = Flashcard.fetchRequest()
 
         // Filter by selected decks
-        request.predicate = NSPredicate(format: "deck.id IN %@", deckIds)
+        var predicates: [NSPredicate] = [NSPredicate(format: "deck.id IN %@", deckIds)]
+
+        // Optionally respect silence (usually false for explicit deck selection)
+        if respectSilence {
+            predicates.append(silencedDeckFilterPredicate())
+        }
+
+        let basePredicate = predicates.count > 1 ?
+            NSCompoundPredicate(andPredicateWithSubpredicates: predicates) :
+            predicates.first!
 
         // Apply mode-specific filtering
         switch mode {
         case .normal:
             // Only due and new cards
             let now = Date()
+            let modeFilterPredicate = NSCompoundPredicate(orPredicateWithSubpredicates: [
+                NSPredicate(format: "reviewSessions.@count == 0"), // New cards
+                NSPredicate(format: "ANY reviewSessions.nextReview <= %@", now as NSDate) // Due cards
+            ])
             request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
-                NSPredicate(format: "deck.id IN %@", deckIds),
-                NSCompoundPredicate(orPredicateWithSubpredicates: [
-                    NSPredicate(format: "reviewSessions.@count == 0"), // New cards
-                    NSPredicate(format: "ANY reviewSessions.nextReview <= %@", now as NSDate) // Due cards
-                ])
+                basePredicate,
+                modeFilterPredicate
             ])
         case .practice:
             // Due + recent cards (last 3 days)
             let now = Date()
             let threeDaysAgo = Calendar.current.date(byAdding: .day, value: -3, to: now) ?? now
+            let modeFilterPredicate = NSCompoundPredicate(orPredicateWithSubpredicates: [
+                NSPredicate(format: "reviewSessions.@count == 0"), // New cards
+                NSPredicate(format: "ANY reviewSessions.nextReview <= %@", now as NSDate), // Due cards
+                NSPredicate(format: "ANY reviewSessions.reviewedAt >= %@", threeDaysAgo as NSDate) // Recent cards
+            ])
             request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
-                NSPredicate(format: "deck.id IN %@", deckIds),
-                NSCompoundPredicate(orPredicateWithSubpredicates: [
-                    NSPredicate(format: "reviewSessions.@count == 0"), // New cards
-                    NSPredicate(format: "ANY reviewSessions.nextReview <= %@", now as NSDate), // Due cards
-                    NSPredicate(format: "ANY reviewSessions.reviewedAt >= %@", threeDaysAgo as NSDate) // Recent cards
-                ])
+                basePredicate,
+                modeFilterPredicate
             ])
         case .cram:
-            // All cards from selected decks (already filtered above)
-            break
+            // All cards from selected decks (basePredicate already includes deck filtering)
+            request.predicate = basePredicate
         }
 
         request.sortDescriptors = [
@@ -369,18 +448,27 @@ class SpacedRepetitionService {
         }
     }
 
-    func getDeckReviewStats(context: NSManagedObjectContext, deckIds: [UUID]) -> (total: Int, new: Int, due: Int, learning: Int) {
+    func getDeckReviewStats(context: NSManagedObjectContext, deckIds: [UUID], respectSilence: Bool = false) -> (total: Int, new: Int, due: Int, learning: Int) {
         let now = Date()
+
+        // Base predicate for deck filtering
+        var basePredicates: [NSPredicate] = [NSPredicate(format: "deck.id IN %@", deckIds)]
+        if respectSilence {
+            basePredicates.append(silencedDeckFilterPredicate())
+        }
+        let basePredicate = basePredicates.count > 1 ?
+            NSCompoundPredicate(andPredicateWithSubpredicates: basePredicates) :
+            basePredicates.first!
 
         // Total cards in selected decks
         let totalRequest: NSFetchRequest<Flashcard> = Flashcard.fetchRequest()
-        totalRequest.predicate = NSPredicate(format: "deck.id IN %@", deckIds)
+        totalRequest.predicate = basePredicate
         let totalCount = (try? context.count(for: totalRequest)) ?? 0
 
         // New cards
         let newRequest: NSFetchRequest<Flashcard> = Flashcard.fetchRequest()
         newRequest.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
-            NSPredicate(format: "deck.id IN %@", deckIds),
+            basePredicate,
             NSPredicate(format: "reviewSessions.@count == 0")
         ])
         let newCount = (try? context.count(for: newRequest)) ?? 0
@@ -388,7 +476,7 @@ class SpacedRepetitionService {
         // Due cards
         let dueRequest: NSFetchRequest<Flashcard> = Flashcard.fetchRequest()
         dueRequest.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
-            NSPredicate(format: "deck.id IN %@", deckIds),
+            basePredicate,
             NSPredicate(format: "ANY reviewSessions.nextReview <= %@", now as NSDate)
         ])
         let dueCount = (try? context.count(for: dueRequest)) ?? 0
@@ -396,7 +484,7 @@ class SpacedRepetitionService {
         // Learning cards
         let learningRequest: NSFetchRequest<Flashcard> = Flashcard.fetchRequest()
         learningRequest.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
-            NSPredicate(format: "deck.id IN %@", deckIds),
+            basePredicate,
             NSPredicate(format: "ANY reviewSessions.interval < 1440 AND ANY reviewSessions.nextReview <= %@", now as NSDate)
         ])
         let learningCount = (try? context.count(for: learningRequest)) ?? 0

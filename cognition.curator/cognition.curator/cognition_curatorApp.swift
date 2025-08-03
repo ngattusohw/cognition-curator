@@ -54,12 +54,24 @@ struct cognition_curatorApp: App {
                     WidgetDataService.shared.refreshOnAppLaunch()
                     // Debug: Print shared defaults to help troubleshoot
                     WidgetDataService.shared.debugSharedDefaults()
+
+                    // Check for expired deck silences on app launch
+                    SpacedRepetitionService.shared.checkAndUpdateExpiredSilences(
+                        context: persistenceController.container.viewContext
+                    )
                 }
             }
             .onChange(of: authService.isAuthenticated) { isAuthenticated in
                 if isAuthenticated {
                     // Update widget data when user logs in
                     WidgetDataService.shared.refreshOnAppLaunch()
+                }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+                if authService.isAuthenticated {
+                    // Update widget data when app becomes active (returns from background)
+                    WidgetDataService.shared.refreshOnAppLaunch()
+                    print("🎯 App became active - refreshing widget data")
                 }
             }
         }

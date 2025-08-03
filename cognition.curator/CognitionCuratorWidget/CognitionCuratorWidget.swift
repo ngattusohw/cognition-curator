@@ -29,15 +29,15 @@ struct FlashcardProvider: TimelineProvider {
     func getTimeline(in context: Context, completion: @escaping (Timeline<ReviewQuestionEntry>) -> ()) {
         let currentEntry = getNextReviewQuestion()
 
-        // Smart refresh timing based on content
+        // Smart refresh timing based on content - more aggressive for debugging
         let nextUpdate: Date
 
         if currentEntry.hasContent {
-            // If showing a card, refresh in 15 minutes to check for new cards
-            nextUpdate = Calendar.current.date(byAdding: .minute, value: 15, to: Date())!
+            // If showing a card, refresh in 2 minutes for debugging
+            nextUpdate = Calendar.current.date(byAdding: .minute, value: 2, to: Date())!
         } else {
-            // If no cards available, refresh in 1 hour
-            nextUpdate = Calendar.current.date(byAdding: .hour, value: 1, to: Date())!
+            // If no cards available, refresh in 5 minutes for debugging
+            nextUpdate = Calendar.current.date(byAdding: .minute, value: 5, to: Date())!
         }
 
         let timeline = Timeline(entries: [currentEntry], policy: .after(nextUpdate))
@@ -53,11 +53,42 @@ struct FlashcardProvider: TimelineProvider {
         let hasCards = sharedDefaults.bool(forKey: "widget.hasCards")
         let lastUpdated = sharedDefaults.object(forKey: "widget.lastUpdated") as? Date
 
-        // Debug logging
-        print("🎯 Widget: Reading data - Due: \(dueCount), HasCards: \(hasCards), LastUpdated: \(lastUpdated?.description ?? "Never")")
+        // Get actual card data
+        let hasTopCard = sharedDefaults.bool(forKey: "widget.topCard.hasContent")
+        let topCardQuestion = sharedDefaults.string(forKey: "widget.topCard.question")
+        let topCardAnswer = sharedDefaults.string(forKey: "widget.topCard.answer")
+        let topCardDeckName = sharedDefaults.string(forKey: "widget.topCard.deckName")
+        let topCardIdString = sharedDefaults.string(forKey: "widget.topCard.cardId")
+        let topCardId = topCardIdString != nil ? UUID(uuidString: topCardIdString!) : nil
 
+        // Debug logging
+        print("🎯 Widget: Reading data - Due: \(dueCount), HasCards: \(hasCards), HasTopCard: \(hasTopCard)")
+        print("🎯 Widget: Last updated: \(lastUpdated?.description ?? "Never")")
+        print("🎯 Widget: Raw question string: '\(topCardQuestion ?? "nil")'")
+        print("🎯 Widget: Raw answer string: '\(topCardAnswer ?? "nil")'")
+        print("🎯 Widget: Raw deck name: '\(topCardDeckName ?? "nil")'")
+        if hasTopCard {
+            print("🎯 Widget: Top card - \(topCardQuestion ?? "N/A") from \(topCardDeckName ?? "N/A")")
+        }
+
+        // Show actual card content if available
+        if hasTopCard,
+           let question = topCardQuestion,
+           let answer = topCardAnswer,
+           let deckName = topCardDeckName {
+            return ReviewQuestionEntry(
+                date: Date(),
+                question: question,
+                answer: answer,
+                deckName: deckName,
+                cardId: topCardId,
+                hasContent: true
+            )
+        }
+
+        // Fallback to generic messages if no specific card available
         if hasCards && dueCount > 0 {
-            // Show sample card when we have due cards
+            // Show generic review prompt when we have due cards but no specific card data
             return ReviewQuestionEntry(
                 date: Date(),
                 question: "Ready to review?",
@@ -107,6 +138,14 @@ struct ReviewQuestionEntry: TimelineEntry {
 // MARK: - Widget Views
 struct CognitionCuratorWidgetEntryView: View {
     var entry: FlashcardProvider.Entry
+
+    private var widgetURL: URL? {
+        if let cardId = entry.cardId {
+            return URL(string: "cognitioncurator://review/\(cardId.uuidString)")
+        } else {
+            return URL(string: "cognitioncurator://review")
+        }
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -159,7 +198,7 @@ struct CognitionCuratorWidgetEntryView: View {
             }
         }
         .padding(12)
-        .widgetURL(URL(string: "cognitioncurator://review"))
+        .widgetURL(widgetURL)
     }
 }
 

@@ -5,7 +5,7 @@ import CoreData
 struct DeckRowView: View {
     let deck: Deck
     @State private var cardCount = 0
-    
+
     var body: some View {
         HStack(spacing: 16) {
             // Deck icon
@@ -17,7 +17,7 @@ struct DeckRowView: View {
                     .background(Color.blue.opacity(0.1))
                     .clipShape(RoundedRectangle(cornerRadius: 10))
             }
-            
+
             // Deck info
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
@@ -25,28 +25,40 @@ struct DeckRowView: View {
                         .font(.headline)
                         .fontWeight(.semibold)
                         .foregroundColor(.primary)
-                    
+
                     Spacer()
-                    
-                    // Premium badge
-                    if deck.isPremium {
-                        Image(systemName: "crown.fill")
-                            .font(.caption)
-                            .foregroundColor(.yellow)
+
+                    // Status badges
+                    HStack(spacing: 4) {
+                        if deck.isCurrentlySilenced {
+                            Image(systemName: "speaker.slash.fill")
+                                .font(.caption)
+                                .foregroundColor(.orange)
+                        }
+
+                        if deck.isPremium {
+                            Image(systemName: "crown.fill")
+                                .font(.caption)
+                                .foregroundColor(.yellow)
+                        }
                     }
                 }
-                
-                Text("\(cardCount) cards")
+
+                                Text("\(cardCount) cards")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
-                
-                if let createdAt = deck.createdAt {
+
+                if deck.isCurrentlySilenced {
+                    Text(deck.silenceDescription)
+                        .font(.caption)
+                        .foregroundColor(.orange)
+                } else if let createdAt = deck.createdAt {
                     Text("Created \(formatDate(createdAt))")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
             }
-            
+
             // Chevron
             Image(systemName: "chevron.right")
                 .font(.caption)
@@ -60,7 +72,7 @@ struct DeckRowView: View {
             cardCount = deck.flashcards?.count ?? 0
         }
     }
-    
+
     private func formatDate(_ date: Date) -> String {
         let formatter = RelativeDateTimeFormatter()
         formatter.unitsStyle = .abbreviated
@@ -72,4 +84,4 @@ struct DeckRowView: View {
     DeckRowView(deck: Deck())
         .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
         .padding()
-} 
+}

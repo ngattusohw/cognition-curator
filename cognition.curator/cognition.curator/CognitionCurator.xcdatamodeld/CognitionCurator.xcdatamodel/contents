@@ -5,10 +5,13 @@
         <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="isPremium" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="isSilenced" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
         <attribute name="isSuperset" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
         <attribute name="lastSyncedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="name" optional="YES" attributeType="String"/>
         <attribute name="needsSync" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="silenceEndDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="silenceType" optional="YES" attributeType="String"/>
         <attribute name="syncStatus" optional="YES" attributeType="String" defaultValueString="synced"/>
         <attribute name="updatedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <relationship name="flashcards" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Flashcard" inverseName="deck" inverseEntity="Flashcard"/>

@@ -20,6 +20,56 @@ struct SettingsView: View {
             ScrollView {
                 VStack(spacing: 24) {
                     headerSection
+
+                    // Widget Debug Section
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text("Widget Debug")
+                            .font(.headline)
+                            .fontWeight(.semibold)
+
+                        HStack(spacing: 12) {
+                            Button("Debug Data") {
+                                WidgetDataService.shared.debugSharedDefaults()
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .font(.caption)
+
+                            Button("Force Update") {
+                                WidgetDataService.shared.updateWidgetData()
+                                print("🎯 Manual widget update triggered")
+                            }
+                            .buttonStyle(.bordered)
+                            .font(.caption)
+                        }
+
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Current Widget Data:")
+                                .font(.caption)
+                                .fontWeight(.semibold)
+
+                            let sharedDefaults = UserDefaults(suiteName: "group.collect.software.cognition-curator") ?? UserDefaults.standard
+                            let dueCount = sharedDefaults.integer(forKey: "widget.dueCardsCount")
+                            let hasCards = sharedDefaults.bool(forKey: "widget.hasCards")
+                            let hasTopCard = sharedDefaults.bool(forKey: "widget.topCard.hasContent")
+                            let question = sharedDefaults.string(forKey: "widget.topCard.question") ?? "None"
+                            let deckName = sharedDefaults.string(forKey: "widget.topCard.deckName") ?? "None"
+
+                            Group {
+                                Text("Due Count: \(dueCount)")
+                                Text("Has Cards: \(hasCards ? "Yes" : "No")")
+                                Text("Has Top Card: \(hasTopCard ? "Yes" : "No")")
+                                Text("Question: \(question)")
+                                Text("Deck: \(deckName)")
+                            }
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        }
+                        .padding()
+                        .background(Color(.secondarySystemGroupedBackground))
+                        .cornerRadius(12)
+                    }
+                    .padding(.horizontal, 20)
+
                     reviewModeSection
                     dailyLimitsSection
                 }

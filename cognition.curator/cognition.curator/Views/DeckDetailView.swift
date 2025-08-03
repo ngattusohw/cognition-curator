@@ -13,6 +13,7 @@ struct DeckDetailView: View {
     @State private var isDeleting = false
     @State private var showingError = false
     @State private var errorMessage = ""
+    @State private var showingSilenceSettings = false
 
     // Services
     @StateObject private var deckAPIService = DeckAPIService(authService: AuthenticationService.shared)
@@ -72,6 +73,11 @@ struct DeckDetailView: View {
                         Label("Start Review", systemImage: "brain.head.profile")
                     }
 
+                    Button(action: { showingSilenceSettings = true }) {
+                        Label(deck.isCurrentlySilenced ? "Manage Silence" : "Silence Deck",
+                              systemImage: deck.isCurrentlySilenced ? "speaker.slash.fill" : "speaker.slash")
+                    }
+
                     Divider()
 
                     Button(role: .destructive, action: {
@@ -91,6 +97,9 @@ struct DeckDetailView: View {
         }
         .sheet(isPresented: $showingEditDeck) {
             EditDeckView(deck: deck)
+        }
+        .sheet(isPresented: $showingSilenceSettings) {
+            DeckSilenceView(deck: deck)
         }
         .alert("Delete Deck", isPresented: $showingDeleteConfirmation) {
             Button("Cancel", role: .cancel) { }
