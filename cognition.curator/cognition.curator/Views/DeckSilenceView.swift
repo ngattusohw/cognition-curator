@@ -1,5 +1,5 @@
 import SwiftUI
-import CoreData
+import SwiftData
 
 enum SilenceDuration: String, CaseIterable {
     case oneHour = "1h"
@@ -40,7 +40,7 @@ enum SilenceDuration: String, CaseIterable {
 
 struct DeckSilenceView: View {
     let deck: Deck
-    @Environment(\.managedObjectContext) private var viewContext
+    @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @StateObject private var toastManager = ToastManager()
 
@@ -104,7 +104,7 @@ struct DeckSilenceView: View {
                 .font(.system(size: 48))
                 .foregroundColor(.orange)
 
-            Text(deck.name ?? "Unknown Deck")
+            Text(deck.name.isEmpty ? "Unknown Deck" : deck.name)
                 .font(.title2)
                 .fontWeight(.semibold)
                 .multilineTextAlignment(.center)
@@ -299,7 +299,7 @@ struct DeckSilenceView: View {
         }
 
         do {
-            try viewContext.save()
+            try modelContext.save()
 
             let message = selectedSilenceType == .permanent ?
                 "Deck silenced permanently" :
@@ -336,7 +336,7 @@ struct DeckSilenceView: View {
         deck.unsilence()
 
         do {
-            try viewContext.save()
+            try modelContext.save()
 
             toastManager.show(
                 message: "Deck unsilenced successfully",
@@ -427,6 +427,6 @@ struct DurationOptionView: View {
 }
 
 #Preview {
-    DeckSilenceView(deck: Deck())
-        .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
+    DeckSilenceView(deck: PreviewHelper.createSampleDeck())
+        .modelContainer(PersistenceController.preview)
 }

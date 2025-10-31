@@ -1,14 +1,11 @@
 import SwiftUI
-import CoreData
+import SwiftData
 
 struct DeckSelectorView: View {
-    @Environment(\.managedObjectContext) private var viewContext
+    @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     
-    @FetchRequest(
-        sortDescriptors: [NSSortDescriptor(keyPath: \Deck.createdAt, ascending: false)],
-        animation: .default)
-    private var decks: FetchedResults<Deck>
+    @Query(sort: \Deck.createdAt, order: .reverse) private var decks: [Deck]
     
     @State private var selectedDeckIds: Set<UUID> = []
     @State private var selectedMode: ReviewMode = .normal
@@ -143,7 +140,7 @@ struct DeckSelectorView: View {
     }
     
     private func toggleDeck(_ deck: Deck) {
-        guard let deckId = deck.id else { return }
+        let deckId = deck.id
         
         if selectedDeckIds.contains(deckId) {
             selectedDeckIds.remove(deckId)
@@ -154,9 +151,9 @@ struct DeckSelectorView: View {
     
     private func loadDeckStats() {
         for deck in decks {
-            guard let deckId = deck.id else { continue }
+            let deckId = deck.id
             let stats = SpacedRepetitionService.shared.getDeckReviewStats(
-                context: viewContext,
+                context: modelContext,
                 deckIds: [deckId]
             )
             deckStats[deckId] = stats
@@ -165,7 +162,7 @@ struct DeckSelectorView: View {
     
     private func calculateTotalStats() -> (total: Int, new: Int, due: Int, learning: Int) {
         let stats = SpacedRepetitionService.shared.getDeckReviewStats(
-            context: viewContext,
+            context: modelContext,
             deckIds: Array(selectedDeckIds)
         )
         return stats
@@ -224,7 +221,7 @@ struct DeckSelectionRow: View {
                 
                 // Deck info
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(deck.name ?? "Untitled Deck")
+                    Text(deck.name.isEmpty ? "Untitled Deck" : deck.name)
                         .font(.headline)
                         .foregroundColor(.primary)
                         .multilineTextAlignment(.leading)

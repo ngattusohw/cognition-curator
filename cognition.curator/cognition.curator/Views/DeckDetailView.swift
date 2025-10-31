@@ -1,10 +1,10 @@
 import SwiftUI
 import UIKit
-import CoreData
+import SwiftData
 
 struct DeckDetailView: View {
     let deck: Deck
-    @Environment(\.managedObjectContext) private var viewContext
+    @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @State private var showingAddCard = false
     @State private var showingEditDeck = false
@@ -18,27 +18,15 @@ struct DeckDetailView: View {
     // Services
     @StateObject private var deckAPIService = DeckAPIService(authService: AuthenticationService.shared)
 
-    // Use @FetchRequest to automatically update when cards are added/removed
-    @FetchRequest private var flashcards: FetchedResults<Flashcard>
-
-    init(deck: Deck) {
-        self.deck = deck
-        // Create a fetch request that filters cards by the deck
-        self._flashcards = FetchRequest(
-            sortDescriptors: [NSSortDescriptor(keyPath: \Flashcard.createdAt, ascending: false)],
-            predicate: NSPredicate(format: "deck == %@", deck)
-        )
-    }
-
     var filteredCards: [Flashcard] {
-        let cards = Array(flashcards)
+        let cards = deck.flashcards ?? []
         if searchText.isEmpty {
-            return cards
+            return cards.sorted { $0.createdAt > $1.createdAt }
         } else {
             return cards.filter { card in
-                card.question?.localizedCaseInsensitiveContains(searchText) ?? false ||
-                card.answer?.localizedCaseInsensitiveContains(searchText) ?? false
-            }
+                card.question.localizedCaseInsensitiveContains(searchText) ||
+                card.answer.localizedCaseInsensitiveContains(searchText)
+            }.sorted { $0.createdAt > $1.createdAt }
         }
     }
 
@@ -54,7 +42,7 @@ struct DeckDetailView: View {
             cardsList
         }
         .background(Color(uiColor: UIColor.systemGroupedBackground))
-        .navigationTitle(deck.name ?? "Deck")
+        .navigationTitle(deck.name.isEmpty ? "Deck" : deck.name)
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
@@ -109,7 +97,7 @@ struct DeckDetailView: View {
                 }
             }
         } message: {
-            Text("Are you sure you want to delete \"\(deck.name ?? "this deck")\"? This action cannot be undone.")
+            Text("Are you sure you want to delete \"\(deck.name.isEmpty ? "this deck" : deck.name)\"? This action cannot be undone.")
         }
         .alert("Error", isPresented: $showingError) {
             Button("OK") { }
@@ -227,16 +215,16 @@ struct DeckDetailView: View {
     }
 
     private func getReviewedCount() -> Int {
-        let cards = Array(flashcards)
-        return cards.filter { !($0.reviewSessions?.allObjects.isEmpty ?? true) }.count
+        let cards = deck.flashcards ?? []
+        return cards.filter { !($0.reviewSessions?.isEmpty ?? true) }.count
     }
 
     private func getDueCount() -> Int {
-        let cards = Array(flashcards)
+        let cards = deck.flashcards ?? []
         return cards.filter { card in
-            let sessions = card.reviewSessions?.allObjects as? [ReviewSession] ?? []
-            let lastSession = sessions.sorted { $0.reviewedAt ?? Date() < $1.reviewedAt ?? Date() }.last
-            return lastSession?.nextReview ?? Date() <= Date()
+            let sessions = card.reviewSessions ?? []
+            let lastSession = sessions.sorted { ($0.reviewedAt ?? Date()) < ($1.reviewedAt ?? Date()) }.last
+            return (lastSession?.nextReview ?? Date()) <= Date()
         }.count
     }
 
@@ -249,7 +237,7 @@ struct DeckDetailView: View {
     // MARK: - Actions
 
     private func deleteDeck() async {
-        guard let deckId = deck.id?.uuidString else {
+        guard let deckId = deck.id.uuidString as String? else {
             await MainActor.run {
                 errorMessage = "Invalid deck ID"
                 showingError = true
@@ -265,11 +253,11 @@ struct DeckDetailView: View {
             // Delete from backend
             try await deckAPIService.deleteDeck(id: deckId)
 
-            // Delete from Core Data (local)
+            // Delete from SwiftData (local)
             await MainActor.run {
-                viewContext.delete(deck)
+                modelContext.delete(deck)
                 do {
-                    try viewContext.save()
+                    try modelContext.save()
                     dismiss() // Navigate back
                 } catch {
                     errorMessage = "Failed to delete deck locally: \(error.localizedDescription)"
@@ -326,7 +314,7 @@ struct CardRowView: View {
                         .foregroundColor(.secondary)
 
                     ExpandableText(
-                        text: card.question ?? "No question",
+                        text: card.question.isEmpty ? "No question" : card.question,
                         lineLimit: 2,
                         font: .subheadline,
                         color: .primary
@@ -354,7 +342,7 @@ struct CardRowView: View {
                         .foregroundColor(.secondary)
 
                     ExpandableText(
-                        text: card.answer ?? "No answer",
+                        text: card.answer.isEmpty ? "No answer" : card.answer,
                         lineLimit: 3,
                         font: .subheadline,
                         color: .primary
@@ -388,8 +376,8 @@ struct CardRowView: View {
 }
 
 #Preview {
-    NavigationView {
-        DeckDetailView(deck: Deck())
+    NavigationStack {
+        DeckDetailView(deck: PreviewHelper.createSampleDeck())
     }
-    .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
+    .modelContainer(PersistenceController.preview)
 }

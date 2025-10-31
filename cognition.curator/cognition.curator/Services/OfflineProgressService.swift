@@ -1,5 +1,5 @@
 import Foundation
-import CoreData
+import SwiftData
 import Combine
 
 // MARK: - Local Progress Models
@@ -50,6 +50,12 @@ struct LocalDeckStats {
     let lastReviewDate: Date?
 }
 
+enum ProgressTimeframe {
+    case week
+    case month
+    case year
+}
+
 // MARK: - Offline Progress Service
 
 @MainActor
@@ -63,75 +69,60 @@ class OfflineProgressService: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
 
     private init() {
-        // Auto-refresh when Core Data changes
-        setupCoreDataNotifications()
         calculateLocalProgress()
     }
-
-    private func setupCoreDataNotifications() {
-        NotificationCenter.default.publisher(for: .NSManagedObjectContextDidSave)
-            .debounce(for: .seconds(1), scheduler: RunLoop.main)
-            .sink { [weak self] _ in
-                self?.calculateLocalProgress()
-            }
-            .store(in: &cancellables)
-    }
-
-    // MARK: - Local Progress Calculation
-
+    
     func calculateLocalProgress() {
         guard !isCalculating else { return }
-
+        
         isCalculating = true
-
+        
         Task {
-            let context = persistenceController.container.newBackgroundContext()
-
-            await context.perform {
-                do {
-                    let progressData = try self.calculateProgressData(in: context)
-
-                    Task { @MainActor in
-                        self.localProgressData = progressData
-                        self.isCalculating = false
-                        print("📊 OfflineProgressService: Local progress calculated")
-                    }
-                } catch {
-                    print("❌ OfflineProgressService: Failed to calculate progress: \(error)")
-                    Task { @MainActor in
-                        self.isCalculating = false
-                    }
+            let context = persistenceController.container.mainContext
+            
+            do {
+                let progressData = try await calculateProgressData(in: context)
+                
+                await MainActor.run {
+                    self.localProgressData = progressData
+                    self.isCalculating = false
+                    print("📊 OfflineProgressService: Local progress calculated")
+                }
+            } catch {
+                print("❌ OfflineProgressService: Failed to calculate progress: \(error)")
+                await MainActor.run {
+                    self.isCalculating = false
                 }
             }
         }
     }
-
-    private func calculateProgressData(in context: NSManagedObjectContext) throws -> LocalProgressData {
+    
+    private func calculateProgressData(in context: ModelContext) async throws -> LocalProgressData {
         // Calculate streak
-        let streak = calculateCurrentStreak(in: context)
-        let longestStreak = calculateLongestStreak(in: context)
-
+        let streak = await calculateCurrentStreak(in: context)
+        let longestStreak = await calculateLongestStreak(in: context)
+        
         // Calculate total cards reviewed
-        let totalCardsReviewed = try calculateTotalCardsReviewed(in: context)
-
+        let totalCardsReviewed = try await calculateTotalCardsReviewed(in: context)
+        
         // Calculate total study time
-        let totalStudyTime = try calculateTotalStudyTime(in: context)
-
+        let totalStudyTime = try await calculateTotalStudyTime(in: context)
+        
         // Calculate overall accuracy
-        let accuracy = try calculateOverallAccuracy(in: context)
-
+        let accuracy = try await calculateOverallAccuracy(in: context)
+        
         // Calculate cards due today
-        let cardsDue = try calculateCardsDueToday(in: context)
-
+        let cardsDue = try await calculateCardsDueToday(in: context)
+        
         // Get recent sessions
-        let recentSessions = try getRecentSessions(in: context)
-
+        let recentSessions = try await getRecentSessions(in: context)
+        
         // Calculate weekly stats
-        let weeklyStats = try calculateWeeklyStats(in: context)
-
+        let weeklyStats = try await calculateWeeklyStats(in: context)
+        
         // Get top decks
-        let topDecks = try getTopDecks(in: context)
-
+        let topDecks = try await getTopDecks(in: context)
+        
         // Generate insights
         let insights = generateInsights(
             streak: streak,
@@ -139,10 +130,10 @@ class OfflineProgressService: ObservableObject {
             accuracy: accuracy,
             recentSessions: recentSessions
         )
-
+        
         // Count pending sync operations
-        let pendingSyncCount = try countPendingSyncOperations(in: context)
-
+        let pendingSyncCount = try await countPendingSyncOperations(in: context)
+        
         return LocalProgressData(
             currentStreak: streak,
             longestStreak: longestStreak,
@@ -159,100 +150,109 @@ class OfflineProgressService: ObservableObject {
             pendingSyncCount: pendingSyncCount
         )
     }
-
+    
     // MARK: - Calculation Methods
-
-    private func calculateCurrentStreak(in context: NSManagedObjectContext) -> Int {
+    
+    private func calculateCurrentStreak(in context: ModelContext) async -> Int {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
-
+        
         var currentStreak = 0
         var checkDate = today
-
+        
         while true {
             let dayStart = checkDate
             let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart) ?? dayStart
-
-            let fetchRequest: NSFetchRequest<ReviewSession> = ReviewSession.fetchRequest()
-            fetchRequest.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
-                NSPredicate(format: "reviewedAt >= %@", dayStart as NSDate),
-                NSPredicate(format: "reviewedAt < %@", dayEnd as NSDate)
-            ])
-            fetchRequest.fetchLimit = 1
-
+            
+            var descriptor = FetchDescriptor<ReviewSession>(
+                predicate: #Predicate<ReviewSession> { session in
+                    session.reviewedAt >= dayStart && session.reviewedAt < dayEnd
+                }
+            )
+            descriptor.fetchLimit = 1
+            
             do {
-                let sessions = try context.fetch(fetchRequest)
+                let sessions = try context.fetch(descriptor)
                 if sessions.isEmpty {
                     break
                 } else {
                     currentStreak += 1
-                    checkDate = calendar.date(byAdding: .day, value: -1, to: checkDate) ?? checkDate
+                    guard let prevDate = calendar.date(byAdding: .day, value: -1, to: checkDate) else { break }
+                    checkDate = prevDate
                 }
             } catch {
                 print("❌ OfflineProgressService: Error calculating streak: \(error)")
                 break
             }
         }
-
+        
         return currentStreak
     }
-
-    private func calculateLongestStreak(in context: NSManagedObjectContext) -> Int {
-        // Simplified implementation - in production, you'd want to track this more efficiently
-        return calculateCurrentStreak(in: context) // Placeholder
+    
+    private func calculateLongestStreak(in context: ModelContext) async -> Int {
+        // Simplified implementation - calculate longest consecutive streak
+        let currentStreak = await calculateCurrentStreak(in: context)
+        // For now, return current streak as longest (could be enhanced to track historical longest)
+        return currentStreak
     }
-
-    private func calculateTotalCardsReviewed(in context: NSManagedObjectContext) throws -> Int {
-        let fetchRequest: NSFetchRequest<ReviewSession> = ReviewSession.fetchRequest()
-        return try context.count(for: fetchRequest)
+    
+    private func calculateTotalCardsReviewed(in context: ModelContext) async throws -> Int {
+        let descriptor = FetchDescriptor<ReviewSession>()
+        let sessions = try context.fetch(descriptor)
+        return sessions.count
     }
-
-    private func calculateTotalStudyTime(in context: NSManagedObjectContext) throws -> Int {
-        // Calculate based on review sessions - estimate 30 seconds per review
-        let totalReviews = try calculateTotalCardsReviewed(in: context)
+    
+    private func calculateTotalStudyTime(in context: ModelContext) async throws -> Int {
+        // Estimate 30 seconds per review
+        let totalReviews = try await calculateTotalCardsReviewed(in: context)
         return (totalReviews * 30) / 60 // Convert to minutes
     }
-
-    private func calculateOverallAccuracy(in context: NSManagedObjectContext) throws -> Double {
-        let fetchRequest: NSFetchRequest<ReviewSession> = ReviewSession.fetchRequest()
-        let sessions = try context.fetch(fetchRequest)
-
+    
+    private func calculateOverallAccuracy(in context: ModelContext) async throws -> Double {
+        let descriptor = FetchDescriptor<ReviewSession>()
+        let sessions = try context.fetch(descriptor)
+        
         guard !sessions.isEmpty else { return 0.0 }
-
+        
         let correctSessions = sessions.filter { $0.difficulty >= 3 } // Good or Easy
         return Double(correctSessions.count) / Double(sessions.count)
     }
-
-    private func calculateCardsDueToday(in context: NSManagedObjectContext) throws -> Int {
+    
+    private func calculateCardsDueToday(in context: ModelContext) async throws -> Int {
         let now = Date()
-        let fetchRequest: NSFetchRequest<ReviewSession> = ReviewSession.fetchRequest()
-        fetchRequest.predicate = NSPredicate(format: "nextReview <= %@", now as NSDate)
-
+        let descriptor = FetchDescriptor<Flashcard>()
+        
+        let allCards = try context.fetch(descriptor)
+        
         // Get unique flashcards that are due
-        let sessions = try context.fetch(fetchRequest)
-        let uniqueFlashcards = Set(sessions.compactMap { $0.flashcard?.id })
-
-        return uniqueFlashcards.count
+        let dueCards = allCards.filter { card in
+            guard let sessions = card.reviewSessions, !sessions.isEmpty else { return false }
+            return sessions.contains { ($0.nextReview ?? Date()) <= now }
+        }
+        
+        return Set(dueCards.map { $0.id }).count
     }
-
-    private func getRecentSessions(in context: NSManagedObjectContext) throws -> [LocalSessionSummary] {
+    
+    private func getRecentSessions(in context: ModelContext) async throws -> [LocalSessionSummary] {
         let calendar = Calendar.current
         let sevenDaysAgo = calendar.date(byAdding: .day, value: -7, to: Date()) ?? Date()
-
-        let fetchRequest: NSFetchRequest<ReviewSession> = ReviewSession.fetchRequest()
-        fetchRequest.predicate = NSPredicate(format: "reviewedAt >= %@", sevenDaysAgo as NSDate)
-        fetchRequest.sortDescriptors = [NSSortDescriptor(key: "reviewedAt", ascending: false)]
-        fetchRequest.fetchLimit = 10
-
-        let sessions = try context.fetch(fetchRequest)
-
+        
+        var descriptor = FetchDescriptor<ReviewSession>(
+            predicate: #Predicate<ReviewSession> { session in
+                session.reviewedAt >= sevenDaysAgo
+            },
+            sortBy: [SortDescriptor(\.reviewedAt, order: .reverse)]
+        )
+        descriptor.fetchLimit = 10
+        
+        let sessions = try context.fetch(descriptor)
+        
         return sessions.compactMap { session in
-            guard let id = session.id?.uuidString,
-                  let reviewedAt = session.reviewedAt else { return nil }
-
+            let id = session.id.uuidString
+            
             return LocalSessionSummary(
                 id: id,
-                date: reviewedAt,
+                date: session.reviewedAt,
                 duration: 1, // Estimate 1 minute per session
                 cardsReviewed: 1,
                 accuracy: session.difficulty >= 3 ? 1.0 : 0.0,
@@ -261,26 +261,26 @@ class OfflineProgressService: ObservableObject {
             )
         }
     }
-
-    private func calculateWeeklyStats(in context: NSManagedObjectContext) throws -> [LocalDayStats] {
+    
+    private func calculateWeeklyStats(in context: ModelContext) async throws -> [LocalDayStats] {
         let calendar = Calendar.current
         let today = Date()
         var weeklyStats: [LocalDayStats] = []
-
+        
         for i in 0..<7 {
-            let date = calendar.date(byAdding: .day, value: -i, to: today) ?? today
+            guard let date = calendar.date(byAdding: .day, value: -i, to: today) else { continue }
             let dayStart = calendar.startOfDay(for: date)
             let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart) ?? dayStart
-
-            let fetchRequest: NSFetchRequest<ReviewSession> = ReviewSession.fetchRequest()
-            fetchRequest.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
-                NSPredicate(format: "reviewedAt >= %@", dayStart as NSDate),
-                NSPredicate(format: "reviewedAt < %@", dayEnd as NSDate)
-            ])
-
-            let sessions = try context.fetch(fetchRequest)
+            
+            var descriptor = FetchDescriptor<ReviewSession>(
+                predicate: #Predicate<ReviewSession> { session in
+                    session.reviewedAt >= dayStart && session.reviewedAt < dayEnd
+                }
+            )
+            
+            let sessions = try context.fetch(descriptor)
             let correctSessions = sessions.filter { $0.difficulty >= 3 }
-
+            
             let dayStats = LocalDayStats(
                 date: dayStart,
                 studyMinutes: sessions.count / 2, // Estimate 30 seconds per review
@@ -288,40 +288,38 @@ class OfflineProgressService: ObservableObject {
                 accuracyRate: sessions.isEmpty ? 0.0 : Double(correctSessions.count) / Double(sessions.count),
                 sessionCount: sessions.count
             )
-
+            
             weeklyStats.append(dayStats)
         }
-
+        
         return weeklyStats.reversed() // Oldest first
     }
-
-    private func getTopDecks(in context: NSManagedObjectContext) throws -> [LocalDeckStats] {
-        let fetchRequest: NSFetchRequest<Deck> = Deck.fetchRequest()
-        let decks = try context.fetch(fetchRequest)
-
+    
+    private func getTopDecks(in context: ModelContext) async throws -> [LocalDeckStats] {
+        let descriptor = FetchDescriptor<Deck>()
+        let decks = try context.fetch(descriptor)
+        
         return decks.compactMap { deck in
-            guard let deckId = deck.id?.uuidString,
-                  let deckName = deck.name else { return nil }
-
-            let flashcards = deck.flashcards?.allObjects as? [Flashcard] ?? []
-            let allSessions = flashcards.flatMap { $0.reviewSessions?.allObjects as? [ReviewSession] ?? [] }
+            let deckId = deck.id.uuidString
+            let flashcards = deck.flashcards ?? []
+            let allSessions = flashcards.flatMap { $0.reviewSessions ?? [] }
             let correctSessions = allSessions.filter { $0.difficulty >= 3 }
-
+            
             return LocalDeckStats(
                 id: deckId,
-                name: deckName,
+                name: deck.name,
                 totalCards: flashcards.count,
                 cardsReviewed: allSessions.count,
                 accuracyRate: allSessions.isEmpty ? 0.0 : Double(correctSessions.count) / Double(allSessions.count),
                 studyTimeMinutes: allSessions.count / 2, // Estimate
-                lastReviewDate: allSessions.compactMap { $0.reviewedAt }.max()
+                lastReviewDate: allSessions.map { $0.reviewedAt }.max()
             )
         }
         .sorted { $0.cardsReviewed > $1.cardsReviewed }
         .prefix(5)
         .map { $0 }
     }
-
+    
     private func generateInsights(
         streak: Int,
         totalCards: Int,
@@ -329,76 +327,57 @@ class OfflineProgressService: ObservableObject {
         recentSessions: [LocalSessionSummary]
     ) -> [String] {
         var insights: [String] = []
-
+        
         if streak > 0 {
             insights.append("🔥 You're on a \(streak)-day study streak! Keep it up!")
         }
-
+        
         if accuracy > 0.8 {
             insights.append("⭐ Excellent accuracy rate of \(Int(accuracy * 100))%!")
         } else if accuracy > 0.6 {
             insights.append("📈 Good progress! Your accuracy is \(Int(accuracy * 100))%")
         }
-
+        
         if totalCards > 100 {
             insights.append("🎓 Impressive! You've reviewed over \(totalCards) cards")
         }
-
+        
         let unsyncedSessions = recentSessions.filter { !$0.isSynced }
         if !unsyncedSessions.isEmpty {
             insights.append("📱 \(unsyncedSessions.count) sessions will sync when online")
         }
-
+        
         if insights.isEmpty {
             insights.append("🚀 Start your learning journey today!")
         }
-
+        
         return insights
     }
-
-    private func countPendingSyncOperations(in context: NSManagedObjectContext) throws -> Int {
-        let fetchRequest: NSFetchRequest<SyncOperation> = SyncOperation.fetchRequest()
-        fetchRequest.predicate = NSPredicate(format: "status == %@", "pending")
-        return try context.count(for: fetchRequest)
+    
+    private func countPendingSyncOperations(in context: ModelContext) async throws -> Int {
+        var descriptor = FetchDescriptor<SyncOperation>(
+            predicate: #Predicate<SyncOperation> { syncOp in
+                syncOp.status == "pending"
+            }
+        )
+        let operations = try context.fetch(descriptor)
+        return operations.count
     }
-
-    // MARK: - Public Interface
-
+    
     func refreshProgress() {
         calculateLocalProgress()
     }
-
+    
     func getProgressForTimeframe(_ timeframe: ProgressTimeframe) -> LocalProgressData? {
-        // For now, return the same data regardless of timeframe
-        // In production, you might want to calculate different periods
         return localProgressData
     }
-
+    
     // MARK: - Sync Integration
-
+    
     func syncWithBackend() async {
-        // When online, this could sync local calculations with backend
-        // and resolve any discrepancies
         if NetworkMonitor.shared.isConnected {
             await OfflineSyncService.shared.syncPendingOperations()
-            // Recalculate after sync
             calculateLocalProgress()
-        }
-    }
-}
-
-// MARK: - Progress Timeframe
-
-enum ProgressTimeframe: String, CaseIterable {
-    case week = "Week"
-    case month = "Month"
-    case year = "Year"
-
-    var days: Int {
-        switch self {
-        case .week: return 7
-        case .month: return 30
-        case .year: return 365
         }
     }
 }

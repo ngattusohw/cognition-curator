@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import CoreData
+import SwiftData
 import WidgetKit
 
 // MARK: - Widget Card Data
@@ -21,6 +21,7 @@ class WidgetDataService {
     static let shared = WidgetDataService()
 
     private let sharedDefaults: UserDefaults
+    private let persistenceController = PersistenceController.shared
 
     private init() {
         // Use App Groups to share data with widget
@@ -30,11 +31,9 @@ class WidgetDataService {
 
     /// Update widget with current due card counts and top review card
     func updateWidgetData() {
-        DispatchQueue.global(qos: .utility).async { [weak self] in
-            guard let self = self else { return }
-
-            let counts = self.getDueCardCounts()
-            let topCard = self.getTopReviewCard()
+        Task { @MainActor in
+            let counts = getDueCardCounts()
+            let topCard = getTopReviewCard()
 
             // Debug logging
             print("🎯 WidgetDataService: Updating widget data - Due: \(counts.dueCount), HasCards: \(counts.hasCards)")
@@ -68,138 +67,85 @@ class WidgetDataService {
             // Force synchronization
             self.sharedDefaults.synchronize()
 
-            DispatchQueue.main.async {
-                // Force widget reload with multiple strategies
-                WidgetCenter.shared.reloadAllTimelines()
+            // Force widget reload with multiple strategies
+            WidgetCenter.shared.reloadAllTimelines()
 
-                // Also try reloading specific widget kind
-                WidgetCenter.shared.reloadTimelines(ofKind: "CognitionCuratorWidget")
+            // Also try reloading specific widget kind
+            WidgetCenter.shared.reloadTimelines(ofKind: "CognitionCuratorWidget")
 
-                print("🎯 WidgetDataService: Widget timeline reloaded (all + specific)")
+            print("🎯 WidgetDataService: Widget timeline reloaded (all + specific)")
 
-                // Log the exact data we're sharing for debugging
-                print("🎯 WidgetDataService: Shared data verification:")
-                print("  - widget.dueCardsCount: \(self.sharedDefaults.integer(forKey: "widget.dueCardsCount"))")
-                print("  - widget.topCard.hasContent: \(self.sharedDefaults.bool(forKey: "widget.topCard.hasContent"))")
-                print("  - widget.topCard.question: \(self.sharedDefaults.string(forKey: "widget.topCard.question") ?? "nil")")
-            }
+            // Log the exact data we're sharing for debugging
+            print("🎯 WidgetDataService: Shared data verification:")
+            print("  - widget.dueCardsCount: \(self.sharedDefaults.integer(forKey: "widget.dueCardsCount"))")
+            print("  - widget.topCard.hasContent: \(self.sharedDefaults.bool(forKey: "widget.topCard.hasContent"))")
+            print("  - widget.topCard.question: \(self.sharedDefaults.string(forKey: "widget.topCard.question") ?? "nil")")
         }
     }
 
+    @MainActor
     private func getDueCardCounts() -> (dueCount: Int, hasCards: Bool) {
-        let context = PersistenceController.shared.container.viewContext
+        let context = persistenceController.container.mainContext
         let now = Date()
-
-        var totalDue = 0
-        var hasAnyCards = false
-
-        context.performAndWait {
-            // Count total cards to check if user has any cards at all
-            let allCardsRequest: NSFetchRequest<Flashcard> = Flashcard.fetchRequest()
-            let totalCards = (try? context.count(for: allCardsRequest)) ?? 0
-            hasAnyCards = totalCards > 0
-
-            if hasAnyCards {
-                // Count NEW cards (no review sessions)
-                let newRequest: NSFetchRequest<Flashcard> = Flashcard.fetchRequest()
-                newRequest.predicate = NSPredicate(format: "reviewSessions.@count == 0")
-                let newCount = (try? context.count(for: newRequest)) ?? 0
-
-                // Count DUE cards (have review sessions but next review is due)
-                let dueRequest: NSFetchRequest<Flashcard> = Flashcard.fetchRequest()
-                dueRequest.predicate = NSPredicate(format: "reviewSessions.@count > 0 AND ANY reviewSessions.nextReview <= %@", now as NSDate)
-                let dueCount = (try? context.count(for: dueRequest)) ?? 0
-
-                totalDue = newCount + dueCount
-
-                // Debug logging
-                print("🎯 WidgetDataService: Total cards: \(totalCards), New: \(newCount), Due: \(dueCount), Total Due: \(totalDue)")
+        
+        do {
+            let descriptor = FetchDescriptor<Flashcard>()
+            let allCards = try context.fetch(descriptor)
+            
+            guard !allCards.isEmpty else {
+                return (dueCount: 0, hasCards: false)
             }
+            
+            let dueCards = allCards.filter { card in
+                guard let sessions = card.reviewSessions, !sessions.isEmpty else {
+                    return true // New cards are considered due
+                }
+                return sessions.contains { ($0.nextReview ?? Date()) <= now }
+            }
+            
+            let uniqueDueCards = Set(dueCards.map { $0.id }).count
+            return (dueCount: uniqueDueCards, hasCards: true)
+        } catch {
+            print("❌ WidgetDataService: Error fetching due cards: \(error)")
+            return (dueCount: 0, hasCards: false)
         }
-
-        return (dueCount: totalDue, hasCards: hasAnyCards)
     }
-
+    
+    @MainActor
     private func getTopReviewCard() -> WidgetCardData? {
-        let context = PersistenceController.shared.container.viewContext
+        let context = persistenceController.container.mainContext
         let now = Date()
-
-        var topCard: WidgetCardData? = nil
-
-        context.performAndWait {
-            // First priority: Get new cards (same logic as SpacedRepetitionService)
-            let newRequest: NSFetchRequest<Flashcard> = Flashcard.fetchRequest()
-            let newCardPredicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
-                NSPredicate(format: "reviewSessions.@count == 0"),
-                silencedDeckFilterPredicate()
-            ])
-            newRequest.predicate = newCardPredicate
-            newRequest.sortDescriptors = [NSSortDescriptor(keyPath: \Flashcard.createdAt, ascending: true)]
-            newRequest.fetchLimit = 1
-
-            do {
-                let newCards = try context.fetch(newRequest)
-                if let card = newCards.first,
-                   let question = card.question,
-                   let answer = card.answer,
-                   let deckName = card.deck?.name,
-                   let cardId = card.id {
-                    topCard = WidgetCardData(
-                        question: question,
-                        answer: answer,
-                        deckName: deckName,
-                        cardId: cardId
-                    )
-                    print("🎯 WidgetDataService: Found new card for widget: \(question)")
-                    return
+        
+        do {
+            let descriptor = FetchDescriptor<Flashcard>(
+                sortBy: [SortDescriptor(\.createdAt, order: .forward)]
+            )
+            let allCards = try context.fetch(descriptor)
+            
+            // Find the first due card (new or review)
+            let dueCard = allCards.first { card in
+                guard let sessions = card.reviewSessions, !sessions.isEmpty else {
+                    return true // New cards are prioritized
                 }
-            } catch {
-                print("Error fetching new cards for widget: \(error)")
+                return sessions.contains { ($0.nextReview ?? Date()) <= now }
             }
-
-            // Second priority: Get due cards if no new cards
-            let dueRequest: NSFetchRequest<Flashcard> = Flashcard.fetchRequest()
-            let dueCardPredicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
-                NSPredicate(format: "ANY reviewSessions.nextReview <= %@", now as NSDate),
-                silencedDeckFilterPredicate()
-            ])
-            dueRequest.predicate = dueCardPredicate
-            dueRequest.sortDescriptors = [NSSortDescriptor(keyPath: \Flashcard.createdAt, ascending: true)]
-            dueRequest.fetchLimit = 1
-
-            do {
-                let dueCards = try context.fetch(dueRequest)
-                if let card = dueCards.first,
-                   let question = card.question,
-                   let answer = card.answer,
-                   let deckName = card.deck?.name,
-                   let cardId = card.id {
-                    topCard = WidgetCardData(
-                        question: question,
-                        answer: answer,
-                        deckName: deckName,
-                        cardId: cardId
-                    )
-                    print("🎯 WidgetDataService: Found due card for widget: \(question)")
-                }
-            } catch {
-                print("Error fetching due cards for widget: \(error)")
+            
+            guard let card = dueCard else {
+                return nil
             }
+            
+            return WidgetCardData(
+                question: card.question,
+                answer: card.answer,
+                deckName: card.deck?.name ?? "Unknown Deck",
+                cardId: card.id
+            )
+        } catch {
+            print("❌ WidgetDataService: Error fetching top card: \(error)")
+            return nil
         }
-
-        return topCard
     }
-
-    private func silencedDeckFilterPredicate() -> NSPredicate {
-        let now = Date()
-
-        // Deck should not be silenced, or if silenced, should be past the silence end date
-        return NSCompoundPredicate(orPredicateWithSubpredicates: [
-            NSPredicate(format: "deck.isSilenced == NO"),
-            NSPredicate(format: "deck.isSilenced == YES AND deck.silenceEndDate != nil AND deck.silenceEndDate <= %@", now as NSDate)
-        ])
-    }
-
+    
     /// Call this when app becomes active to refresh widget data
     func refreshOnAppLaunch() {
         print("🎯 WidgetDataService: App launched - refreshing widget data")
@@ -217,17 +163,17 @@ class WidgetDataService {
         print("🎯 WidgetDataService: Cards added - refreshing widget data")
         updateWidgetData()
     }
-
+    
     /// Debug method to check current shared UserDefaults values
     func debugSharedDefaults() {
         let dueCount = sharedDefaults.integer(forKey: "widget.dueCardsCount")
         let hasCards = sharedDefaults.bool(forKey: "widget.hasCards")
         let lastUpdated = sharedDefaults.object(forKey: "widget.lastUpdated") as? Date
-
+        
         let hasTopCard = sharedDefaults.bool(forKey: "widget.topCard.hasContent")
         let topCardQuestion = sharedDefaults.string(forKey: "widget.topCard.question")
         let topCardDeckName = sharedDefaults.string(forKey: "widget.topCard.deckName")
-
+        
         print("🎯 WidgetDataService Debug:")
         print("  - Due Count: \(dueCount)")
         print("  - Has Cards: \(hasCards)")

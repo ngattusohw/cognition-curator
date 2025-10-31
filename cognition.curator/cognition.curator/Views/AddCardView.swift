@@ -1,10 +1,10 @@
 import SwiftUI
 import UIKit
-import CoreData
+import SwiftData
 
 struct AddCardView: View {
     let deck: Deck
-    @Environment(\.managedObjectContext) private var viewContext
+    @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var authService: AuthenticationService
 
@@ -109,7 +109,7 @@ struct AddCardView: View {
                 .font(.title2)
                 .fontWeight(.semibold)
 
-            Text("Create a new flashcard for '\(deck.name ?? "Untitled Deck")'")
+            Text("Create a new flashcard for '\(deck.name.isEmpty ? "Untitled Deck" : deck.name)'")
                 .font(.subheadline)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
@@ -275,7 +275,7 @@ struct AddCardView: View {
                     for: question,
                     context: nil,
                     difficulty: .medium,
-                    deckTopic: deck.name
+                    deckTopic: deck.name.isEmpty ? "Untitled Deck" : deck.name
                 )
 
                 await MainActor.run {
@@ -302,7 +302,7 @@ struct AddCardView: View {
 
         do {
             // Create flashcard via backend API
-            guard let deckId = deck.id?.uuidString else {
+            guard let deckId = deck.id.uuidString as String? else {
                 throw FlashcardAPIError.invalidURL
             }
 
@@ -316,17 +316,20 @@ struct AddCardView: View {
                 sourceReference: nil
             )
 
-            // Also save locally in Core Data for offline access
+            // Also save locally in SwiftData for offline access
             await MainActor.run {
-                let newCard = Flashcard(context: viewContext)
-                newCard.id = UUID(uuidString: backendFlashcard.id) ?? UUID()
-                newCard.question = backendFlashcard.front
-                newCard.answer = backendFlashcard.back
-                newCard.createdAt = Date()
-                newCard.deck = deck
+                let newCard = Flashcard(
+                    id: UUID(uuidString: backendFlashcard.id) ?? UUID(),
+                    question: backendFlashcard.front,
+                    answer: backendFlashcard.back,
+                    createdAt: Date(),
+                    deck: deck
+                )
+                
+                modelContext.insert(newCard)
 
                 do {
-                    try viewContext.save()
+                    try modelContext.save()
                 } catch {
                     print("Failed to save flashcard locally: \(error)")
                 }
@@ -349,6 +352,6 @@ struct AddCardView: View {
 }
 
 #Preview {
-    AddCardView(deck: Deck())
-        .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
+    AddCardView(deck: PreviewHelper.createSampleDeck())
+        .modelContainer(PersistenceController.preview)
 }

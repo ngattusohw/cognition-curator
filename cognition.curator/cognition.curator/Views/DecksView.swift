@@ -1,13 +1,10 @@
 import SwiftUI
 import UIKit
-import CoreData
+import SwiftData
 
 struct DecksView: View {
-    @Environment(\.managedObjectContext) private var viewContext
-    @FetchRequest(
-        sortDescriptors: [NSSortDescriptor(keyPath: \Deck.createdAt, ascending: false)],
-        animation: .default)
-    private var decks: FetchedResults<Deck>
+    @Environment(\.modelContext) private var modelContext
+    @Query(sort: \Deck.createdAt, order: .reverse) private var decks: [Deck]
     
     @State private var showingCreateDeck = false
     @State private var searchText = ""
@@ -16,7 +13,7 @@ struct DecksView: View {
     var filteredDecks: [Deck] {
         let filtered = decks.filter { deck in
             if !searchText.isEmpty {
-                return deck.name?.localizedCaseInsensitiveContains(searchText) ?? false
+                return deck.name.localizedCaseInsensitiveContains(searchText)
             }
             return true
         }
@@ -169,7 +166,7 @@ struct DeckCardView: View {
             // Header
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(deck.name ?? "Untitled Deck")
+                    Text(deck.name.isEmpty ? "Untitled Deck" : deck.name)
                         .font(.title3)
                         .fontWeight(.semibold)
                         .foregroundColor(.primary)
@@ -246,10 +243,10 @@ struct DeckCardView: View {
     }
     
     private func getProgressValue(for deck: Deck) -> Double {
-        let cards = deck.flashcards?.allObjects as? [Flashcard] ?? []
+        let cards = deck.flashcards ?? []
         guard !cards.isEmpty else { return 0 }
         
-        let reviewedCards = cards.filter { !($0.reviewSessions?.allObjects.isEmpty ?? true) }
+        let reviewedCards = cards.filter { !($0.reviewSessions?.isEmpty ?? true) }
         return Double(reviewedCards.count) / Double(cards.count)
     }
 }
@@ -288,5 +285,5 @@ enum DeckFilter: CaseIterable {
 
 #Preview {
     DecksView()
-        .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
+        .modelContainer(PersistenceController.preview)
 } 

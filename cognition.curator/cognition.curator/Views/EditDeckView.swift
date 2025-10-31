@@ -1,10 +1,10 @@
 import SwiftUI
 import UIKit
-import CoreData
+import SwiftData
 
 struct EditDeckView: View {
     let deck: Deck
-    @Environment(\.managedObjectContext) private var viewContext
+    @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     
     @State private var deckName: String
@@ -14,7 +14,7 @@ struct EditDeckView: View {
     
     init(deck: Deck) {
         self.deck = deck
-        self._deckName = State(initialValue: deck.name ?? "")
+        self._deckName = State(initialValue: deck.name.isEmpty ? "" : deck.name)
         self._isPremium = State(initialValue: deck.isPremium)
     }
     
@@ -115,9 +115,10 @@ struct EditDeckView: View {
         
         deck.name = deckName
         deck.isPremium = isPremium
+        deck.updatedAt = Date()
         
         do {
-            try viewContext.save()
+            try modelContext.save()
             dismiss()
         } catch {
             errorMessage = "Failed to save deck: \(error.localizedDescription)"
@@ -127,6 +128,6 @@ struct EditDeckView: View {
 }
 
 #Preview {
-    EditDeckView(deck: Deck())
-        .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
+    EditDeckView(deck: PreviewHelper.createSampleDeck())
+        .modelContainer(PersistenceController.preview)
 } 

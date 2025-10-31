@@ -1,5 +1,4 @@
 import Foundation
-import CoreData
 
 enum DeckSilenceType: String, CaseIterable {
     case permanent = "permanent"
