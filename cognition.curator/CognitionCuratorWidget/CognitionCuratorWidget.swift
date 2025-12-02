@@ -45,9 +45,12 @@ struct FlashcardProvider: TimelineProvider {
     }
 
     private func getNextReviewQuestion() -> ReviewQuestionEntry {
+        let appGroupId = "group.collect.software.cognition-curator"
+
         // Use App Groups to share data with main app
-        let sharedDefaults = UserDefaults(suiteName: "group.collect.software.cognition-curator")
-                            ?? UserDefaults.standard
+        let appGroupDefaults = UserDefaults(suiteName: appGroupId)
+        let isAppGroupAvailable = appGroupDefaults != nil
+        let sharedDefaults = appGroupDefaults ?? UserDefaults.standard
 
         let dueCount = sharedDefaults.integer(forKey: "widget.dueCardsCount")
         let hasCards = sharedDefaults.bool(forKey: "widget.hasCards")
@@ -62,11 +65,12 @@ struct FlashcardProvider: TimelineProvider {
         let topCardId = topCardIdString != nil ? UUID(uuidString: topCardIdString!) : nil
 
         // Debug logging
+        print("🎯 Widget: App Group '\(appGroupId)' available: \(isAppGroupAvailable)")
         print("🎯 Widget: Reading data - Due: \(dueCount), HasCards: \(hasCards), HasTopCard: \(hasTopCard)")
         print("🎯 Widget: Last updated: \(lastUpdated?.description ?? "Never")")
-        print("🎯 Widget: Raw question string: '\(topCardQuestion ?? "nil")'")
-        print("🎯 Widget: Raw answer string: '\(topCardAnswer ?? "nil")'")
-        print("🎯 Widget: Raw deck name: '\(topCardDeckName ?? "nil")'")
+        print("🎯 Widget: Raw question: '\(topCardQuestion ?? "nil")'")
+        print("🎯 Widget: Raw answer: '\(topCardAnswer ?? "nil")'")
+        print("🎯 Widget: Raw deck: '\(topCardDeckName ?? "nil")'")
         if hasTopCard {
             print("🎯 Widget: Top card - \(topCardQuestion ?? "N/A") from \(topCardDeckName ?? "N/A")")
         }
