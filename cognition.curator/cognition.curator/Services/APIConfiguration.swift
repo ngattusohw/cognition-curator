@@ -20,6 +20,36 @@ struct APIConfiguration {
     static let environment = "production"
     #endif
 
+    // MARK: - Timeout Configuration
+
+    /// Default timeout for most API requests (in seconds)
+    static let defaultTimeoutInterval: TimeInterval = 60
+
+    /// Extended timeout for authentication requests (in seconds)
+    /// This is longer to account for cold starts and Apple token verification
+    static let authTimeoutInterval: TimeInterval = 120
+
+    /// Extended timeout for AI generation requests (in seconds)
+    static let aiTimeoutInterval: TimeInterval = 180
+
+    // MARK: - Custom URLSession Configurations
+
+    /// URLSession configured for authentication requests with extended timeout
+    static var authURLSession: URLSession = {
+        let config = URLSessionConfiguration.default
+        config.timeoutIntervalForRequest = authTimeoutInterval
+        config.timeoutIntervalForResource = authTimeoutInterval
+        return URLSession(configuration: config)
+    }()
+
+    /// URLSession configured for AI requests with extended timeout
+    static var aiURLSession: URLSession = {
+        let config = URLSessionConfiguration.default
+        config.timeoutIntervalForRequest = aiTimeoutInterval
+        config.timeoutIntervalForResource = aiTimeoutInterval
+        return URLSession(configuration: config)
+    }()
+
     // MARK: - Endpoint Paths
 
     struct Auth {

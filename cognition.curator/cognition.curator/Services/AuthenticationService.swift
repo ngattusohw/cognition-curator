@@ -185,7 +185,7 @@ class AuthenticationService: ObservableObject {
         urlRequest.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
         do {
-            let (data, response) = try await URLSession.shared.data(for: urlRequest)
+            let (data, response) = try await APIConfiguration.authURLSession.data(for: urlRequest)
 
             if let httpResponse = response as? HTTPURLResponse {
                 print("🔑 AuthService: Profile request status: \(httpResponse.statusCode)")
@@ -224,7 +224,7 @@ class AuthenticationService: ObservableObject {
         print("🔑 AuthService: Making request to: \(url)")
 
         do {
-            let (data, response) = try await URLSession.shared.data(for: urlRequest)
+            let (data, response) = try await APIConfiguration.authURLSession.data(for: urlRequest)
 
             if let httpResponse = response as? HTTPURLResponse {
                 print("🔑 AuthService: Received response with status: \(httpResponse.statusCode)")
@@ -275,8 +275,10 @@ class AuthenticationService: ObservableObject {
             throw AuthError.unknown("Failed to encode request")
         }
 
+        // Use auth-specific URLSession with extended timeout for Apple Sign In
+        // This accounts for cold starts and Apple token verification delays
         do {
-            let (data, response) = try await URLSession.shared.data(for: urlRequest)
+            let (data, response) = try await APIConfiguration.authURLSession.data(for: urlRequest)
 
             guard let httpResponse = response as? HTTPURLResponse else {
                 throw AuthError.unknown("Invalid response")
