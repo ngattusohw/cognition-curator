@@ -1,10 +1,10 @@
 import SwiftUI
 import UIKit
-import CoreData
+import SwiftData
 import Combine
 
 struct ProgressStatsView: View {
-    @Environment(\.managedObjectContext) private var viewContext
+    @Environment(\.modelContext) private var modelContext
     @StateObject private var progressDataService = ProgressDataService.shared
     @StateObject private var offlineProgressService = OfflineProgressService.shared
     @StateObject private var offlineSyncService = OfflineSyncService.shared
@@ -423,16 +423,19 @@ struct ProgressStatsView: View {
         let calendar = Calendar.current
         let twoDaysAgo = calendar.date(byAdding: .day, value: -2, to: Date()) ?? Date()
 
-        // Recent review sessions from Core Data
-        let reviewRequest: NSFetchRequest<ReviewSession> = ReviewSession.fetchRequest()
-        reviewRequest.predicate = NSPredicate(format: "reviewedAt >= %@", twoDaysAgo as NSDate)
-        reviewRequest.sortDescriptors = [NSSortDescriptor(keyPath: \ReviewSession.reviewedAt, ascending: false)]
-        reviewRequest.fetchLimit = 10
+        // Recent review sessions from SwiftData
+        var reviewDescriptor = FetchDescriptor<ReviewSession>(
+            predicate: #Predicate<ReviewSession> { session in
+                session.reviewedAt >= twoDaysAgo
+            },
+            sortBy: [SortDescriptor(\.reviewedAt, order: .reverse)]
+        )
+        reviewDescriptor.fetchLimit = 10
 
         do {
-            let recentReviews = try viewContext.fetch(reviewRequest)
+            let recentReviews = try modelContext.fetch(reviewDescriptor)
             let reviewGroups = Dictionary(grouping: recentReviews) { review in
-                calendar.startOfDay(for: review.reviewedAt ?? Date())
+                calendar.startOfDay(for: review.reviewedAt)
             }
 
             for (date, reviews) in reviewGroups.prefix(5) {
@@ -453,18 +456,21 @@ struct ProgressStatsView: View {
         }
 
         // Recent deck creations
-        let deckRequest: NSFetchRequest<Deck> = Deck.fetchRequest()
-        deckRequest.predicate = NSPredicate(format: "createdAt >= %@", twoDaysAgo as NSDate)
-        deckRequest.sortDescriptors = [NSSortDescriptor(keyPath: \Deck.createdAt, ascending: false)]
-        deckRequest.fetchLimit = 5
+        var deckDescriptor = FetchDescriptor<Deck>(
+            predicate: #Predicate<Deck> { deck in
+                deck.createdAt >= twoDaysAgo
+            },
+            sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
+        )
+        deckDescriptor.fetchLimit = 5
 
         do {
-            let recentDecks = try viewContext.fetch(deckRequest)
+            let recentDecks = try modelContext.fetch(deckDescriptor)
             for deck in recentDecks {
                 activities.append(RecentActivity(
                     type: .deckCreated,
-                    title: "Created deck '\(deck.name ?? "Unknown")'",
-                    time: deck.createdAt ?? Date(),
+                    title: "Created deck '\(deck.name.isEmpty ? "Unknown" : deck.name)'",
+                    time: deck.createdAt,
                     count: nil
                 ))
             }
@@ -473,13 +479,16 @@ struct ProgressStatsView: View {
         }
 
         // Recent card additions
-        let cardRequest: NSFetchRequest<Flashcard> = Flashcard.fetchRequest()
-        cardRequest.predicate = NSPredicate(format: "createdAt >= %@", twoDaysAgo as NSDate)
-        cardRequest.sortDescriptors = [NSSortDescriptor(keyPath: \Flashcard.createdAt, ascending: false)]
-        cardRequest.fetchLimit = 20
+        var cardDescriptor = FetchDescriptor<Flashcard>(
+            predicate: #Predicate<Flashcard> { card in
+                card.createdAt >= twoDaysAgo
+            },
+            sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
+        )
+        cardDescriptor.fetchLimit = 20
 
         do {
-            let recentCards = try viewContext.fetch(cardRequest)
+            let recentCards = try modelContext.fetch(cardDescriptor)
 
             // Group cards by date and deck name
             struct CardGroupKey: Hashable {
@@ -489,7 +498,7 @@ struct ProgressStatsView: View {
 
             let cardGroups = Dictionary(grouping: recentCards) { card in
                 CardGroupKey(
-                    date: calendar.startOfDay(for: card.createdAt ?? Date()),
+                    date: calendar.startOfDay(for: card.createdAt),
                     deckName: card.deck?.name ?? "Unknown"
                 )
             }
@@ -927,5 +936,5 @@ struct ErrorView: View {
 
 #Preview {
     ProgressStatsView(selectedTab: .constant(3))
-        .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
+        .modelContainer(PersistenceController.preview)
 }

@@ -1,6 +1,6 @@
 import SwiftUI
 import UIKit
-import CoreData
+import SwiftData
 
 // Simple data structure for AI-generated flashcards
 struct FlashcardData {
@@ -9,7 +9,7 @@ struct FlashcardData {
 }
 
 struct CreateDeckView: View {
-    @Environment(\.managedObjectContext) private var viewContext
+    @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var authService: AuthenticationService
 
@@ -424,17 +424,20 @@ struct CreateDeckView: View {
                 color: "#007AFF"
             )
 
-            // Also save locally in Core Data for offline access
+            // Also save locally in SwiftData for offline access
             await MainActor.run {
-                let newDeck = Deck(context: viewContext)
-                newDeck.id = UUID(uuidString: backendDeck.id) ?? UUID()
-                newDeck.name = backendDeck.name
-                newDeck.createdAt = Date()
-                newDeck.isPremium = isPremium
-                newDeck.isSuperset = isSuperset
+                let newDeck = Deck(
+                    id: UUID(uuidString: backendDeck.id) ?? UUID(),
+                    name: backendDeck.name,
+                    createdAt: Date(),
+                    isPremium: isPremium,
+                    isSuperset: isSuperset
+                )
+                
+                modelContext.insert(newDeck)
 
                 do {
-                    try viewContext.save()
+                    try modelContext.save()
                 } catch {
                     print("Failed to save deck locally: \(error)")
                 }
@@ -531,5 +534,5 @@ struct CreationMethodCard: View {
 
 #Preview {
     CreateDeckView()
-        .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
+        .modelContainer(PersistenceController.preview)
 }

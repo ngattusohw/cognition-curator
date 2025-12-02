@@ -1,60 +1,130 @@
 import SwiftUI
-import CoreData
+import SwiftData
 
 struct PreviewHelper {
     static let shared = PreviewHelper()
     
     // MARK: - Test Data Generation
+    @MainActor
     static func createSampleDeck(name: String = "Sample Deck", cardCount: Int = 5, reviewedCount: Int = 2) -> Deck {
-        let context = PersistenceController.preview.container.viewContext
-        let deck = Deck(context: context)
-        deck.name = name
-        deck.createdAt = Date()
-        deck.isPremium = false
-        deck.isSuperset = false
+        let context = PersistenceController.preview.mainContext
+        let deck = Deck(
+            name: name,
+            createdAt: Date(),
+            isPremium: false,
+            isSuperset: false
+        )
+        context.insert(deck)
         
         // Create cards
         for i in 1...cardCount {
-            let card = Flashcard(context: context)
-            card.question = "Sample Question \(i)"
-            card.answer = "Sample Answer \(i)"
-            card.deck = deck
-            card.createdAt = Date().addingTimeInterval(-Double(i * 3600))
+            let card = Flashcard(
+                question: "Sample Question \(i)",
+                answer: "Sample Answer \(i)",
+                createdAt: Date().addingTimeInterval(-Double(i * 3600)),
+                deck: deck
+            )
+            context.insert(card)
             
             // Mark some as reviewed
             if i <= reviewedCount {
-                let session = ReviewSession(context: context)
-                session.difficulty = Int16([1, 2, 3, 4].randomElement() ?? 3)
-                session.reviewedAt = Date().addingTimeInterval(-Double(i * 1800))
-                session.nextReview = Date().addingTimeInterval(Double(i * 86400))
-                session.flashcard = card
+                let session = ReviewSession(
+                    difficulty: Int16([1, 2, 3, 4].randomElement() ?? 3),
+                    easeFactor: 2.5,
+                    interval: Double(i * 86400) / 1440.0, // Convert to minutes
+                    reviewedAt: Date().addingTimeInterval(-Double(i * 1800)),
+                    nextReview: Date().addingTimeInterval(Double(i * 86400)),
+                    flashcard: card
+                )
+                context.insert(session)
             }
         }
         
         return deck
     }
     
+    @MainActor
     static func createEmptyDeck() -> Deck {
         return createSampleDeck(name: "Empty Deck", cardCount: 0, reviewedCount: 0)
     }
     
+    @MainActor
     static func createFullDeck() -> Deck {
         return createSampleDeck(name: "Full Deck", cardCount: 20, reviewedCount: 15)
     }
     
+    @MainActor
     static func createPremiumDeck() -> Deck {
-        let deck = createSampleDeck(name: "Premium Deck", cardCount: 10, reviewedCount: 5)
-        deck.isPremium = true
+        let context = PersistenceController.preview.mainContext
+        let deck = Deck(
+            name: "Premium Deck",
+            createdAt: Date(),
+            isPremium: true,
+            isSuperset: false
+        )
+        context.insert(deck)
+        
+        for i in 1...10 {
+            let card = Flashcard(
+                question: "Premium Question \(i)",
+                answer: "Premium Answer \(i)",
+                createdAt: Date(),
+                deck: deck
+            )
+            context.insert(card)
+            
+            if i <= 5 {
+                let session = ReviewSession(
+                    difficulty: Int16([1, 2, 3, 4].randomElement() ?? 3),
+                    easeFactor: 2.5,
+                    interval: 1440.0,
+                    reviewedAt: Date(),
+                    flashcard: card
+                )
+                context.insert(session)
+            }
+        }
+        
         return deck
     }
     
+    @MainActor
     static func createSupersetDeck() -> Deck {
-        let deck = createSampleDeck(name: "Superset Deck", cardCount: 8, reviewedCount: 3)
-        deck.isSuperset = true
+        let context = PersistenceController.preview.mainContext
+        let deck = Deck(
+            name: "Superset Deck",
+            createdAt: Date(),
+            isPremium: false,
+            isSuperset: true
+        )
+        context.insert(deck)
+        
+        for i in 1...8 {
+            let card = Flashcard(
+                question: "Superset Question \(i)",
+                answer: "Superset Answer \(i)",
+                createdAt: Date(),
+                deck: deck
+            )
+            context.insert(card)
+            
+            if i <= 3 {
+                let session = ReviewSession(
+                    difficulty: Int16([1, 2, 3, 4].randomElement() ?? 3),
+                    easeFactor: 2.5,
+                    interval: 1440.0,
+                    reviewedAt: Date(),
+                    flashcard: card
+                )
+                context.insert(session)
+            }
+        }
+        
         return deck
     }
     
     // MARK: - UI State Testing
+    @MainActor
     static func testAllStates<T: View>(_ viewBuilder: @escaping (Deck) -> T) -> some View {
         VStack(spacing: 20) {
             Group {
@@ -96,7 +166,7 @@ extension DeckDetailView {
         PreviewHelper.testAllStates { deck in
             DeckDetailView(deck: deck)
         }
-        .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
+        .modelContainer(PersistenceController.preview)
     }
 }
 
@@ -107,7 +177,7 @@ extension DecksView {
                 .font(.title)
             DecksView()
         }
-        .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
+        .modelContainer(PersistenceController.preview)
     }
 }
 
@@ -118,7 +188,7 @@ extension ReviewView {
                 .font(.title)
             ReviewView(forceReview: .constant(false), selectedTab: .constant(0))
         }
-        .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
+        .modelContainer(PersistenceController.preview)
     }
 }
 
@@ -130,4 +200,4 @@ struct PreviewValidator {
         _ = DecksView.allStatePreviews
         _ = ReviewView.allStatePreviews
     }
-} 
+}

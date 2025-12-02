@@ -1,10 +1,10 @@
 import SwiftUI
 import UIKit
-import CoreData
+import SwiftData
 import Combine
 
 struct ReviewView: View {
-    @Environment(\.managedObjectContext) private var viewContext
+    @Environment(\.modelContext) private var modelContext
     @EnvironmentObject var deepLinkHandler: DeepLinkHandler
     @Binding var forceReview: Bool
     @Binding var selectedTab: Int
@@ -65,8 +65,8 @@ struct ReviewView: View {
                     loadCardsForReview()
                 }
             }
-            .onChange(of: deepLinkHandler.targetCardId) { cardId in
-                if let cardId = cardId {
+            .onChange(of: deepLinkHandler.targetCardId) { oldValue, newValue in
+                if let cardId = newValue {
                     loadSpecificCard(cardId: cardId)
                 }
             }
@@ -240,8 +240,8 @@ struct ReviewView: View {
 
                         ExpandableText(
                             text: showingAnswer ?
-                                cardsToReview[currentCardIndex].answer ?? "No answer" :
-                                cardsToReview[currentCardIndex].question ?? "No question",
+                            cardsToReview[currentCardIndex].answer :
+                                cardsToReview[currentCardIndex].question,
                             lineLimit: 4,
                             font: .title2,
                             color: .primary
@@ -466,7 +466,7 @@ struct ReviewView: View {
                 currentReviewMode = mode
 
                 cardsToReview = SpacedRepetitionService.shared.getCardsFromDecks(
-                    context: viewContext,
+                    context: modelContext,
                     deckIds: deckIds,
                     mode: mode,
                     limit: 50
@@ -500,7 +500,7 @@ struct ReviewView: View {
         }
 
         cardsToReview = SpacedRepetitionService.shared.getCardsForTodaySession(
-            context: viewContext,
+            context: modelContext,
             limit: force ? 50 : nil,
             force: force
         )
@@ -516,16 +516,17 @@ struct ReviewView: View {
 
     private func loadSpecificCard(cardId: UUID) {
         // Find the card by ID
-        let request: NSFetchRequest<Flashcard> = Flashcard.fetchRequest()
-        request.predicate = NSPredicate(format: "id == %@", cardId as CVarArg)
-        request.fetchLimit = 1
+        var descriptor = FetchDescriptor<Flashcard>(
+            predicate: #Predicate<Flashcard> { $0.id == cardId }
+        )
+        descriptor.fetchLimit = 1
 
         do {
-            let foundCards = try viewContext.fetch(request)
+            let foundCards: [Flashcard] = try modelContext.fetch(descriptor)
             if let specificCard = foundCards.first {
                 // Load this specific card along with other due cards
                 let otherCards = SpacedRepetitionService.shared.getCardsForTodaySession(
-                    context: viewContext,
+                    context: modelContext,
                     limit: 19 // Limit to 19 so we have room for the specific card
                 )
 
@@ -587,10 +588,10 @@ struct ReviewView: View {
         guard currentCardIndex < cardsToReview.count else { return }
 
         let card = cardsToReview[currentCardIndex]
-        print("📝 ReviewView: Processing difficulty \(difficulty.rawValue) for card: \(card.question ?? "Unknown")")
+        print("📝 ReviewView: Processing difficulty \(difficulty.rawValue) for card: \(card.question.isEmpty ? "Unknown" : card.question)")
 
         // Calculate next review using SM-2 algorithm
-        _ = SpacedRepetitionService.shared.calculateNextReview(for: card, difficulty: difficulty.rawValue)
+        _ = SpacedRepetitionService.shared.calculateNextReview(for: card, difficulty: difficulty.rawValue, context: modelContext)
 
         // Save context locally
         PersistenceController.shared.save()
@@ -629,7 +630,7 @@ struct ReviewView: View {
             private func syncReviewToBackend(card: Flashcard, difficulty: DifficultyLevel) async {
         print("🔄 ReviewView: Syncing individual review (offline-first)...")
 
-        guard let cardId = card.id?.uuidString else {
+        guard let cardId = card.id.uuidString as String? else {
             print("❌ ReviewView: Card ID is missing, cannot sync")
             return
         }
@@ -638,8 +639,8 @@ struct ReviewView: View {
         let wasCorrect = difficulty.rawValue >= 3 // Good or Easy = correct
 
         // Get the latest review session for spaced repetition data
-        let reviewSessions = card.reviewSessions?.allObjects as? [ReviewSession] ?? []
-        let lastSession = reviewSessions.sorted { ($0.reviewedAt ?? Date.distantPast) < ($1.reviewedAt ?? Date.distantPast) }.last
+        let reviewSessions = card.reviewSessions ?? []
+        let lastSession = reviewSessions.sorted { $0.reviewedAt < $1.reviewedAt }.last
 
         // Create sync payload
         let syncPayload: [String: Any] = [
@@ -692,7 +693,7 @@ struct ReviewView: View {
         let correctCards = cardsReviewed // Simplified - you might want to track actual correct/incorrect
         let sessionAccuracy = cardsReviewed > 0 ? Double(correctCards) / Double(cardsReviewed) : 0.0
 
-        let deckId = isDeckSpecificReview ? (cardsToReview.first?.deck?.id?.uuidString) : nil
+        let deckId = isDeckSpecificReview ? (cardsToReview.first?.deck?.id.uuidString) : nil
         print("🎯 ReviewView: Deck ID: \(deckId ?? "nil"), Session Type: \(isDeckSpecificReview ? "deck_specific" : "general_review")")
 
         let studySession = StudySessionSync(
@@ -782,5 +783,6 @@ struct DifficultyButton: View {
 
 #Preview {
     ReviewView(forceReview: .constant(false), selectedTab: .constant(0))
-        .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
+        .modelContainer(PersistenceController.preview)
+        .environmentObject(DeepLinkHandler())
 }

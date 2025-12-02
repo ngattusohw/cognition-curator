@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import SwiftData
 
 struct AICardReviewView: View {
     let topic: String
@@ -16,7 +17,7 @@ struct AICardReviewView: View {
     @StateObject private var toastManager = ToastManager()
 
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.managedObjectContext) private var viewContext
+    @Environment(\.modelContext) private var modelContext
     @EnvironmentObject private var authService: AuthenticationService
 
     init(topic: String, deckName: String, generatedCards: Binding<[AIGeneratedCard]>, onDeckCreated: @escaping () -> Void) {
@@ -628,27 +629,30 @@ struct AICardReviewView: View {
                     throw error
                 }
 
-                // Save locally in Core Data
+                // Save locally in SwiftData
                 await MainActor.run {
-                    let newDeck = Deck(context: viewContext)
-                    newDeck.id = UUID(uuidString: backendDeck.id) ?? UUID()
-                    newDeck.name = backendDeck.name
-                    newDeck.createdAt = Date()
-                    newDeck.isPremium = false
-                    newDeck.isSuperset = false
+                    let newDeck = Deck(
+                        id: UUID(uuidString: backendDeck.id) ?? UUID(),
+                        name: backendDeck.name,
+                        createdAt: Date(),
+                        isPremium: false,
+                        isSuperset: false
+                    )
+                    modelContext.insert(newDeck)
 
                     // Create local flashcards
                     for card in acceptedCards {
-                        let newCard = Flashcard(context: viewContext)
-                        newCard.id = UUID()
-                        newCard.question = card.question
-                        newCard.answer = card.answer
-                        newCard.createdAt = Date()
-                        newCard.deck = newDeck
+                        let newCard = Flashcard(
+                            question: card.question,
+                            answer: card.answer,
+                            createdAt: Date(),
+                            deck: newDeck
+                        )
+                        modelContext.insert(newCard)
                     }
 
                     do {
-                        try viewContext.save()
+                        try modelContext.save()
                     } catch {
                         print("Failed to save deck locally: \(error)")
                     }

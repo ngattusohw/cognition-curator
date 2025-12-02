@@ -1,14 +1,11 @@
 import SwiftUI
 import UIKit
-import CoreData
+import SwiftData
 
 struct HomeView: View {
-    @Environment(\.managedObjectContext) private var viewContext
+    @Environment(\.modelContext) private var modelContext
     @EnvironmentObject private var authService: AuthenticationService
-    @FetchRequest(
-        sortDescriptors: [NSSortDescriptor(keyPath: \Deck.createdAt, ascending: false)],
-        animation: .default)
-    private var decks: FetchedResults<Deck>
+    @Query(sort: \Deck.createdAt, order: .reverse) private var decks: [Deck]
 
     @Binding var selectedTab: Int
     @Binding var forceReview: Bool
@@ -344,7 +341,7 @@ struct HomeView: View {
     }
 
     private func loadStats() {
-        let stats = SpacedRepetitionService.shared.getTodayReviewStats(context: viewContext)
+        let stats = SpacedRepetitionService.shared.getTodayReviewStats(context: modelContext)
         cardsDueToday = stats.dueCards + stats.newCards + stats.learningCards
         // Real streak data now comes from progressDataService
     }
@@ -417,5 +414,5 @@ struct QuickActionButton: View {
 
 #Preview {
     HomeView(selectedTab: .constant(0), forceReview: .constant(false))
-        .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
+        .modelContainer(PersistenceController.preview)
 }

@@ -1,6 +1,6 @@
 import SwiftUI
 import UIKit
-import CoreData
+import SwiftData
 
 struct DeckRowView: View {
     let deck: Deck
@@ -21,7 +21,7 @@ struct DeckRowView: View {
             // Deck info
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
-                    Text(deck.name ?? "Untitled Deck")
+                    Text(deck.name.isEmpty ? "Untitled Deck" : deck.name)
                         .font(.headline)
                         .fontWeight(.semibold)
                         .foregroundColor(.primary)
@@ -52,8 +52,8 @@ struct DeckRowView: View {
                     Text(deck.silenceDescription)
                         .font(.caption)
                         .foregroundColor(.orange)
-                } else if let createdAt = deck.createdAt {
-                    Text("Created \(formatDate(createdAt))")
+                } else {
+                    Text("Created \(formatDate(deck.createdAt))")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -81,7 +81,7 @@ struct DeckRowView: View {
 }
 
 #Preview {
-    DeckRowView(deck: Deck())
-        .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
+    DeckRowView(deck: PreviewHelper.createSampleDeck())
+        .modelContainer(PersistenceController.preview)
         .padding()
 }

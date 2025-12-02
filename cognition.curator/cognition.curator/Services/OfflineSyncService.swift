@@ -1,5 +1,5 @@
 import Foundation
-import CoreData
+import SwiftData
 import Combine
 import Network
 
@@ -70,41 +70,46 @@ class OfflineSyncService: ObservableObject {
         priority: SyncPriority = .normal
     ) {
         print("📥 OfflineSyncService: Queuing \(operation.rawValue) for \(entityType) - \(entityId)")
-
-        let context = persistenceController.container.viewContext
-
+        
+        let context = persistenceController.container.mainContext
+        
         // Check if operation already exists
-        let fetchRequest: NSFetchRequest<SyncOperation> = SyncOperation.fetchRequest()
-        fetchRequest.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
-            NSPredicate(format: "entityType == %@", entityType),
-            NSPredicate(format: "entityId == %@", entityId),
-            NSPredicate(format: "operation == %@", operation.rawValue),
-            NSPredicate(format: "status == %@", SyncStatus.pending.rawValue)
-        ])
-
+        let pendingStatus = "pending"
+        let operationRawValue = operation.rawValue
+        var descriptor = FetchDescriptor<SyncOperation>(
+            predicate: #Predicate<SyncOperation> { syncOp in
+                syncOp.entityType == entityType &&
+                syncOp.entityId == entityId &&
+                syncOp.operation == operationRawValue &&
+                syncOp.status == pendingStatus
+            }
+        )
+        
         do {
-            let existingOperations = try context.fetch(fetchRequest)
+            let existingOperations = try context.fetch(descriptor)
             if !existingOperations.isEmpty {
                 print("⚠️ OfflineSyncService: Operation already queued for \(entityType) - \(entityId)")
                 return
             }
-
-            let syncOp = SyncOperation(context: context)
-            syncOp.id = UUID()
-            syncOp.entityType = entityType
-            syncOp.entityId = entityId
-            syncOp.operation = operation.rawValue
-            syncOp.payload = payload
-            syncOp.priority = priority.rawValue
-            syncOp.status = SyncStatus.pending.rawValue
-            syncOp.createdAt = Date()
-            syncOp.retryCount = 0
-
+            
+            // Convert payload to AnyCodable
+            let codablePayload = payload.mapValues { AnyCodable($0) }
+            
+            let syncOp = SyncOperation(
+                entityId: entityId,
+                entityType: entityType,
+                operation: operation.rawValue,
+                payload: codablePayload,
+                priority: priority.rawValue,
+                status: SyncStatus.pending.rawValue
+            )
+            
+            context.insert(syncOp)
             try context.save()
             updatePendingOperationsCount()
-
+            
             print("✅ OfflineSyncService: Operation queued successfully")
-
+            
             // Try immediate sync if connected
             if networkMonitor.isConnected {
                 Task { @MainActor in
@@ -123,109 +128,114 @@ class OfflineSyncService: ObservableObject {
             print("📴 OfflineSyncService: No network connection, skipping sync")
             return
         }
-
+        
         guard !isSyncing else {
             print("🔄 OfflineSyncService: Sync already in progress")
             return
         }
-
+        
         isSyncing = true
         syncProgress = 0.0
-
+        
         print("🚀 OfflineSyncService: Starting sync of pending operations")
-
-        let context = persistenceController.container.newBackgroundContext()
-
-        let fetchRequest: NSFetchRequest<SyncOperation> = SyncOperation.fetchRequest()
-        fetchRequest.predicate = NSPredicate(format: "status == %@", SyncStatus.pending.rawValue)
-        fetchRequest.sortDescriptors = [
-            NSSortDescriptor(key: "priority", ascending: false),
-            NSSortDescriptor(key: "createdAt", ascending: true)
-        ]
-
+        
+        let context = persistenceController.container.mainContext
+        
+        let pendingStatus = "pending"
+        var descriptor = FetchDescriptor<SyncOperation>(
+            predicate: #Predicate<SyncOperation> { syncOp in
+                syncOp.status == pendingStatus
+            },
+            sortBy: [
+                SortDescriptor(\.priority, order: .reverse),
+                SortDescriptor(\.createdAt, order: .forward)
+            ]
+        )
+        
         do {
-            let pendingOperations = try context.fetch(fetchRequest)
+            let pendingOperations = try context.fetch(descriptor)
             print("📊 OfflineSyncService: Found \(pendingOperations.count) pending operations")
-
+            
             if pendingOperations.isEmpty {
                 isSyncing = false
                 syncProgress = 1.0
                 lastSyncDate = Date()
                 return
             }
-
+            
             let totalOperations = Double(pendingOperations.count)
-
+            
             for (index, operation) in pendingOperations.enumerated() {
                 await syncSingleOperation(operation)
                 syncProgress = Double(index + 1) / totalOperations
             }
-
+            
             isSyncing = false
             syncProgress = 1.0
             lastSyncDate = Date()
             updatePendingOperationsCount()
-
+            
         } catch {
             print("❌ OfflineSyncService: Failed to fetch pending operations: \(error)")
             isSyncing = false
         }
     }
-
+    
     private func syncSingleOperation(_ operation: SyncOperation) async {
-        guard let entityType = operation.entityType,
-              let entityId = operation.entityId,
-              let operationType = operation.operation else {
+        guard !operation.entityId.isEmpty,
+              !operation.entityType.isEmpty,
+              !operation.operation.isEmpty else {
             print("❌ OfflineSyncService: Invalid operation data")
             return
         }
-
+        
         let payload: [String: Any]
-        if let payloadDict = operation.payload as? [String: Any] {
-            payload = payloadDict
+        if let payloadDict = operation.payload {
+            payload = payloadDict.mapValues { $0.value }
         } else {
             payload = [:]
         }
-        print("🔄 OfflineSyncService: Syncing \(operationType) for \(entityType) - \(entityId)")
-
+        
+        print("🔄 OfflineSyncService: Syncing \(operation.operation) for \(operation.entityType) - \(operation.entityId)")
+        
         var success = false
-
-        switch (entityType, operationType) {
+        
+        switch (operation.entityType, operation.operation) {
         case ("ReviewSession", "create"), ("ReviewSession", "review"):
             success = await syncReviewSession(payload: payload)
         case ("Deck", "create"):
             success = await syncDeckCreation(payload: payload)
         case ("Deck", "update"):
-            success = await syncDeckUpdate(entityId: entityId, payload: payload)
+            success = await syncDeckUpdate(entityId: operation.entityId, payload: payload)
         case ("Flashcard", "create"):
             success = await syncFlashcardCreation(payload: payload)
         case ("Flashcard", "update"):
-            success = await syncFlashcardUpdate(entityId: entityId, payload: payload)
+            success = await syncFlashcardUpdate(entityId: operation.entityId, payload: payload)
         default:
-            print("⚠️ OfflineSyncService: Unknown operation type: \(entityType).\(operationType)")
+            print("⚠️ OfflineSyncService: Unknown operation type: \(operation.entityType).\(operation.operation)")
         }
-
-                // Update operation status
-        let context = operation.managedObjectContext ?? persistenceController.container.viewContext
-        await context.perform {
-            if success {
-                operation.status = SyncStatus.synced.rawValue
-                print("✅ OfflineSyncService: Operation synced successfully")
+        
+        // Update operation status
+        let context = persistenceController.container.mainContext
+        
+        if success {
+            operation.status = SyncStatus.synced.rawValue
+            operation.lastSyncedAt = Date()
+            print("✅ OfflineSyncService: Operation synced successfully")
+        } else {
+            operation.retryCount += 1
+            if operation.retryCount >= 3 {
+                operation.status = SyncStatus.failed.rawValue
+                print("❌ OfflineSyncService: Operation failed after 3 retries")
             } else {
-                operation.retryCount += 1
-                if operation.retryCount >= 3 {
-                    operation.status = SyncStatus.failed.rawValue
-                    print("❌ OfflineSyncService: Operation failed after 3 retries")
-                } else {
-                    print("⚠️ OfflineSyncService: Operation failed, will retry (\(operation.retryCount)/3)")
-                }
+                print("⚠️ OfflineSyncService: Operation failed, will retry (\(operation.retryCount)/3)")
             }
-
-            do {
-                try context.save()
-            } catch {
-                print("❌ OfflineSyncService: Failed to update operation status: \(error)")
-            }
+        }
+        
+        do {
+            try context.save()
+        } catch {
+            print("❌ OfflineSyncService: Failed to update operation status: \(error)")
         }
     }
 
@@ -287,22 +297,28 @@ class OfflineSyncService: ObservableObject {
     // MARK: - Helper Methods
 
     private func updatePendingOperationsCount() {
-        let context = persistenceController.container.viewContext
-        let fetchRequest: NSFetchRequest<SyncOperation> = SyncOperation.fetchRequest()
-        fetchRequest.predicate = NSPredicate(format: "status == %@", SyncStatus.pending.rawValue)
-
+        let context = persistenceController.container.mainContext
+        
+        let pendingStatus = "pending"
+        let descriptor = FetchDescriptor<SyncOperation>(
+            predicate: #Predicate<SyncOperation> { syncOp in
+                syncOp.status == pendingStatus
+            }
+        )
+        
         do {
-            let count = try context.count(for: fetchRequest)
-            pendingOperationsCount = count
-            print("📊 OfflineSyncService: \(count) pending operations")
+            let pendingOperations = try context.fetch(descriptor)
+            pendingOperationsCount = pendingOperations.count
+            print("📊 OfflineSyncService: \(pendingOperationsCount) pending operations")
         } catch {
             print("❌ OfflineSyncService: Failed to count pending operations: \(error)")
+            pendingOperationsCount = 0
         }
     }
 
     func markEntityForSync(entityType: String, entityId: String, operation: SyncOperationType, priority: SyncPriority = .normal) {
-        let context = persistenceController.container.viewContext
-
+        let context = persistenceController.container.mainContext
+        
         // Update entity sync status
         switch entityType {
         case "Deck":
@@ -314,15 +330,22 @@ class OfflineSyncService: ObservableObject {
         default:
             break
         }
+        
+        queueSyncOperation(entityType: entityType, entityId: entityId, operation: operation, payload: [:], priority: priority)
     }
-
-        private func updateDeckSyncStatus(entityId: String, needsSync: Bool, context: NSManagedObjectContext) {
-        let fetchRequest: NSFetchRequest<Deck> = NSFetchRequest(entityName: "Deck")
-        let uuidValue = UUID(uuidString: entityId) ?? UUID()
-        fetchRequest.predicate = NSPredicate(format: "id == %@", uuidValue as NSUUID)
-
+    
+    private func updateDeckSyncStatus(entityId: String, needsSync: Bool, context: ModelContext) {
+        guard let uuidValue = UUID(uuidString: entityId) else { return }
+        
+        var descriptor = FetchDescriptor<Deck>(
+            predicate: #Predicate<Deck> { deck in
+                deck.id == uuidValue
+            }
+        )
+        descriptor.fetchLimit = 1
+        
         do {
-            let decks = try context.fetch(fetchRequest)
+            let decks = try context.fetch(descriptor)
             if let deck = decks.first {
                 deck.needsSync = needsSync
                 deck.syncStatus = needsSync ? SyncStatus.pending.rawValue : SyncStatus.synced.rawValue
@@ -333,14 +356,19 @@ class OfflineSyncService: ObservableObject {
             print("❌ OfflineSyncService: Failed to update deck sync status: \(error)")
         }
     }
-
-        private func updateFlashcardSyncStatus(entityId: String, needsSync: Bool, context: NSManagedObjectContext) {
-        let fetchRequest: NSFetchRequest<Flashcard> = NSFetchRequest(entityName: "Flashcard")
-        let uuidValue = UUID(uuidString: entityId) ?? UUID()
-        fetchRequest.predicate = NSPredicate(format: "id == %@", uuidValue as NSUUID)
-
+    
+    private func updateFlashcardSyncStatus(entityId: String, needsSync: Bool, context: ModelContext) {
+        guard let uuidValue = UUID(uuidString: entityId) else { return }
+        
+        var descriptor = FetchDescriptor<Flashcard>(
+            predicate: #Predicate<Flashcard> { flashcard in
+                flashcard.id == uuidValue
+            }
+        )
+        descriptor.fetchLimit = 1
+        
         do {
-            let flashcards = try context.fetch(fetchRequest)
+            let flashcards = try context.fetch(descriptor)
             if let flashcard = flashcards.first {
                 flashcard.needsSync = needsSync
                 flashcard.syncStatus = needsSync ? SyncStatus.pending.rawValue : SyncStatus.synced.rawValue
@@ -351,14 +379,19 @@ class OfflineSyncService: ObservableObject {
             print("❌ OfflineSyncService: Failed to update flashcard sync status: \(error)")
         }
     }
-
-        private func updateReviewSessionSyncStatus(entityId: String, needsSync: Bool, context: NSManagedObjectContext) {
-        let fetchRequest: NSFetchRequest<ReviewSession> = NSFetchRequest(entityName: "ReviewSession")
-        let uuidValue = UUID(uuidString: entityId) ?? UUID()
-        fetchRequest.predicate = NSPredicate(format: "id == %@", uuidValue as NSUUID)
-
+    
+    private func updateReviewSessionSyncStatus(entityId: String, needsSync: Bool, context: ModelContext) {
+        guard let uuidValue = UUID(uuidString: entityId) else { return }
+        
+        var descriptor = FetchDescriptor<ReviewSession>(
+            predicate: #Predicate<ReviewSession> { session in
+                session.id == uuidValue
+            }
+        )
+        descriptor.fetchLimit = 1
+        
         do {
-            let sessions = try context.fetch(fetchRequest)
+            let sessions = try context.fetch(descriptor)
             if let session = sessions.first {
                 session.needsSync = needsSync
                 session.syncStatus = needsSync ? SyncStatus.pending.rawValue : SyncStatus.synced.rawValue
@@ -384,21 +417,23 @@ class OfflineSyncService: ObservableObject {
     }
 
     // MARK: - Cleanup
-
+    
     func cleanupSyncedOperations() {
-        let context = persistenceController.container.viewContext
-
+        let context = persistenceController.container.mainContext
+        
         // Remove operations older than 7 days that are synced
         let cutoffDate = Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? Date()
-
-        let fetchRequest: NSFetchRequest<SyncOperation> = SyncOperation.fetchRequest()
-        fetchRequest.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
-            NSPredicate(format: "status == %@", SyncStatus.synced.rawValue),
-            NSPredicate(format: "lastSyncedAt < %@", cutoffDate as NSDate)
-        ])
-
+        let syncedStatus = "synced"
+        
+        var descriptor = FetchDescriptor<SyncOperation>(
+            predicate: #Predicate<SyncOperation> { syncOp in
+                syncOp.status == syncedStatus &&
+                syncOp.createdAt < cutoffDate
+            }
+        )
+        
         do {
-            let oldOperations = try context.fetch(fetchRequest)
+            let oldOperations = try context.fetch(descriptor)
             for operation in oldOperations {
                 context.delete(operation)
             }
@@ -418,14 +453,14 @@ enum ConflictResolution {
     case merge
 }
 
-// MARK: - Extensions for Core Data Models
+// MARK: - Extensions for SwiftData Models
 
 extension Deck {
     func markForSync(operation: SyncOperationType) {
         Task { @MainActor in
             OfflineSyncService.shared.markEntityForSync(
                 entityType: "Deck",
-                entityId: self.id?.uuidString ?? "",
+                entityId: self.id.uuidString,
                 operation: operation
             )
         }
@@ -437,7 +472,7 @@ extension Flashcard {
         Task { @MainActor in
             OfflineSyncService.shared.markEntityForSync(
                 entityType: "Flashcard",
-                entityId: self.id?.uuidString ?? "",
+                entityId: self.id.uuidString,
                 operation: operation
             )
         }
@@ -449,7 +484,7 @@ extension ReviewSession {
         Task { @MainActor in
             OfflineSyncService.shared.markEntityForSync(
                 entityType: "ReviewSession",
-                entityId: self.id?.uuidString ?? "",
+                entityId: self.id.uuidString,
                 operation: operation
             )
         }

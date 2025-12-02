@@ -44,10 +44,10 @@ struct ContentView: View {
                 .tag(3)
         }
         .accentColor(.blue)
-        .onChange(of: deepLinkHandler.selectedTab) { newTab in
+        .onChange(of: deepLinkHandler.selectedTab) { _, newTab in
             selectedTab = newTab
         }
-        .onChange(of: deepLinkHandler.shouldOpenReview) { shouldOpen in
+        .onChange(of: deepLinkHandler.shouldOpenReview) { _, shouldOpen in
             if shouldOpen {
                 forceReview = true
                 deepLinkHandler.clearDeepLink()
@@ -58,5 +58,6 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
-        .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
+        .modelContainer(PersistenceController.preview)
+        .environmentObject(DeepLinkHandler())
 }

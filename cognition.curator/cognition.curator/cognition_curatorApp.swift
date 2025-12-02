@@ -31,7 +31,7 @@ struct cognition_curatorApp: App {
                 } else if authService.isAuthenticated && onboardingState.isOnboardingComplete {
                     // Main app content
                     ContentView()
-                        .environment(\.managedObjectContext, persistenceController.container.viewContext)
+                        .modelContainer(persistenceController.container)
                         .environmentObject(authService)
                         .environmentObject(deepLinkHandler)
                 } else {
@@ -57,12 +57,12 @@ struct cognition_curatorApp: App {
 
                     // Check for expired deck silences on app launch
                     SpacedRepetitionService.shared.checkAndUpdateExpiredSilences(
-                        context: persistenceController.container.viewContext
+                        context: persistenceController.container.mainContext
                     )
                 }
             }
-            .onChange(of: authService.isAuthenticated) { isAuthenticated in
-                if isAuthenticated {
+            .onChange(of: authService.isAuthenticated) { oldValue, newValue in
+                if newValue && oldValue != newValue {
                     // Update widget data when user logs in
                     WidgetDataService.shared.refreshOnAppLaunch()
                 }
