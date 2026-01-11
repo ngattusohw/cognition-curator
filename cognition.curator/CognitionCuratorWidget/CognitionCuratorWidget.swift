@@ -29,15 +29,17 @@ struct FlashcardProvider: TimelineProvider {
     func getTimeline(in context: Context, completion: @escaping (Timeline<ReviewQuestionEntry>) -> ()) {
         let currentEntry = getNextReviewQuestion()
 
-        // Smart refresh timing based on content - more aggressive for debugging
+        // Smart refresh timing based on content
+        // Note: Widget will also refresh when app calls WidgetCenter.shared.reloadAllTimelines()
         let nextUpdate: Date
 
         if currentEntry.hasContent {
-            // If showing a card, refresh in 2 minutes for debugging
-            nextUpdate = Calendar.current.date(byAdding: .minute, value: 2, to: Date())!
+            // If showing a card, refresh in 15 minutes
+            // The app will trigger immediate refresh when data changes
+            nextUpdate = Calendar.current.date(byAdding: .minute, value: 15, to: Date())!
         } else {
-            // If no cards available, refresh in 5 minutes for debugging
-            nextUpdate = Calendar.current.date(byAdding: .minute, value: 5, to: Date())!
+            // If no cards available, refresh in 30 minutes
+            nextUpdate = Calendar.current.date(byAdding: .minute, value: 30, to: Date())!
         }
 
         let timeline = Timeline(entries: [currentEntry], policy: .after(nextUpdate))
@@ -48,9 +50,22 @@ struct FlashcardProvider: TimelineProvider {
         let appGroupId = "group.collect.software.cognition-curator"
 
         // Use App Groups to share data with main app
-        let appGroupDefaults = UserDefaults(suiteName: appGroupId)
-        let isAppGroupAvailable = appGroupDefaults != nil
-        let sharedDefaults = appGroupDefaults ?? UserDefaults.standard
+        // CRITICAL: Widget MUST use app group UserDefaults to access shared data
+        guard let appGroupDefaults = UserDefaults(suiteName: appGroupId) else {
+            print("❌ Widget: App Group '\(appGroupId)' NOT available - widget cannot access shared data!")
+            print("❌ Widget: Check that app group is configured in both main app and widget entitlements")
+            // Return error state
+            return ReviewQuestionEntry(
+                date: Date(),
+                question: "Configuration Error",
+                answer: "Widget cannot access app data. Please check app group configuration.",
+                deckName: "Error",
+                cardId: nil,
+                hasContent: false
+            )
+        }
+
+        let sharedDefaults = appGroupDefaults
 
         let dueCount = sharedDefaults.integer(forKey: "widget.dueCardsCount")
         let hasCards = sharedDefaults.bool(forKey: "widget.hasCards")
@@ -65,21 +80,23 @@ struct FlashcardProvider: TimelineProvider {
         let topCardId = topCardIdString != nil ? UUID(uuidString: topCardIdString!) : nil
 
         // Debug logging
-        print("🎯 Widget: App Group '\(appGroupId)' available: \(isAppGroupAvailable)")
+        print("✅ Widget: App Group '\(appGroupId)' available")
         print("🎯 Widget: Reading data - Due: \(dueCount), HasCards: \(hasCards), HasTopCard: \(hasTopCard)")
         print("🎯 Widget: Last updated: \(lastUpdated?.description ?? "Never")")
-        print("🎯 Widget: Raw question: '\(topCardQuestion ?? "nil")'")
-        print("🎯 Widget: Raw answer: '\(topCardAnswer ?? "nil")'")
-        print("🎯 Widget: Raw deck: '\(topCardDeckName ?? "nil")'")
         if hasTopCard {
-            print("🎯 Widget: Top card - \(topCardQuestion ?? "N/A") from \(topCardDeckName ?? "N/A")")
+            print("🎯 Widget: Top card question: '\(topCardQuestion ?? "nil")'")
+            print("🎯 Widget: Top card deck: '\(topCardDeckName ?? "nil")'")
+            print("🎯 Widget: Top card ID: '\(topCardIdString ?? "nil")'")
+        } else {
+            print("🎯 Widget: No top card data available")
         }
 
         // Show actual card content if available
+        // Validate that all required fields are present and non-empty
         if hasTopCard,
-           let question = topCardQuestion,
-           let answer = topCardAnswer,
-           let deckName = topCardDeckName {
+           let question = topCardQuestion, !question.isEmpty,
+           let answer = topCardAnswer, !answer.isEmpty,
+           let deckName = topCardDeckName, !deckName.isEmpty {
             return ReviewQuestionEntry(
                 date: Date(),
                 question: question,
@@ -88,6 +105,12 @@ struct FlashcardProvider: TimelineProvider {
                 cardId: topCardId,
                 hasContent: true
             )
+        } else if hasTopCard {
+            // hasTopCard is true but data is incomplete - log and fall through to fallback
+            print("⚠️ Widget: hasTopCard is true but data is incomplete or empty")
+            print("  - Question: \(topCardQuestion ?? "nil")")
+            print("  - Answer: \(topCardAnswer ?? "nil")")
+            print("  - Deck: \(topCardDeckName ?? "nil")")
         }
 
         // Fallback to generic messages if no specific card available

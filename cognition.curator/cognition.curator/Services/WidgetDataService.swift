@@ -61,12 +61,23 @@ class WidgetDataService {
             self.sharedDefaults.set(Date(), forKey: "widget.lastUpdated")
 
             // Update shared UserDefaults with top card data
+            // Use atomic updates to ensure data consistency
             if let card = topCard {
-                self.sharedDefaults.set(card.question, forKey: "widget.topCard.question")
-                self.sharedDefaults.set(card.answer, forKey: "widget.topCard.answer")
-                self.sharedDefaults.set(card.deckName, forKey: "widget.topCard.deckName")
-                self.sharedDefaults.set(card.cardId.uuidString, forKey: "widget.topCard.cardId")
-                self.sharedDefaults.set(true, forKey: "widget.topCard.hasContent")
+                // Validate card data before writing
+                if card.question.isEmpty || card.answer.isEmpty || card.deckName.isEmpty {
+                    print("⚠️ WidgetDataService: Top card has empty fields, clearing top card data")
+                    self.sharedDefaults.removeObject(forKey: "widget.topCard.question")
+                    self.sharedDefaults.removeObject(forKey: "widget.topCard.answer")
+                    self.sharedDefaults.removeObject(forKey: "widget.topCard.deckName")
+                    self.sharedDefaults.removeObject(forKey: "widget.topCard.cardId")
+                    self.sharedDefaults.set(false, forKey: "widget.topCard.hasContent")
+                } else {
+                    self.sharedDefaults.set(card.question, forKey: "widget.topCard.question")
+                    self.sharedDefaults.set(card.answer, forKey: "widget.topCard.answer")
+                    self.sharedDefaults.set(card.deckName, forKey: "widget.topCard.deckName")
+                    self.sharedDefaults.set(card.cardId.uuidString, forKey: "widget.topCard.cardId")
+                    self.sharedDefaults.set(true, forKey: "widget.topCard.hasContent")
+                }
             } else {
                 // Clear top card data when no cards available
                 self.sharedDefaults.removeObject(forKey: "widget.topCard.question")
@@ -76,22 +87,28 @@ class WidgetDataService {
                 self.sharedDefaults.set(false, forKey: "widget.topCard.hasContent")
             }
 
-            // Force synchronization
+            // Force synchronization - ensure data is persisted before reloading widget
             self.sharedDefaults.synchronize()
-
-            // Force widget reload with multiple strategies
-            WidgetCenter.shared.reloadAllTimelines()
-
-            // Also try reloading specific widget kind
-            WidgetCenter.shared.reloadTimelines(ofKind: "CognitionCuratorWidget")
-
-            print("🎯 WidgetDataService: Widget timeline reloaded (all + specific)")
 
             // Log the exact data we're sharing for debugging
             print("🎯 WidgetDataService: Shared data verification:")
             print("  - widget.dueCardsCount: \(self.sharedDefaults.integer(forKey: "widget.dueCardsCount"))")
             print("  - widget.topCard.hasContent: \(self.sharedDefaults.bool(forKey: "widget.topCard.hasContent"))")
             print("  - widget.topCard.question: \(self.sharedDefaults.string(forKey: "widget.topCard.question") ?? "nil")")
+        }
+        
+        // Reload widgets after data is written (outside the Task to ensure it happens after completion)
+        Task { @MainActor in
+            // Small delay to ensure UserDefaults synchronization completes
+            try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+            
+            // Force widget reload with multiple strategies
+            WidgetCenter.shared.reloadAllTimelines()
+            
+            // Also try reloading specific widget kind
+            WidgetCenter.shared.reloadTimelines(ofKind: "CognitionCuratorWidget")
+            
+            print("🎯 WidgetDataService: Widget timeline reloaded (all + specific)")
         }
     }
 
@@ -108,7 +125,16 @@ class WidgetDataService {
                 return (dueCount: 0, hasCards: false)
             }
 
-            let dueCards = allCards.filter { card in
+            // Filter out silenced decks
+            let activeCards = allCards.filter { card in
+                !isDeckSilenced(card.deck)
+            }
+
+            guard !activeCards.isEmpty else {
+                return (dueCount: 0, hasCards: true) // Has cards but all silenced
+            }
+
+            let dueCards = activeCards.filter { card in
                 guard let sessions = card.reviewSessions, !sessions.isEmpty else {
                     return true // New cards are considered due
                 }
@@ -129,20 +155,66 @@ class WidgetDataService {
         let now = Date()
 
         do {
-            let descriptor = FetchDescriptor<Flashcard>(
-                sortBy: [SortDescriptor(\.createdAt, order: .forward)]
-            )
+            let descriptor = FetchDescriptor<Flashcard>()
             let allCards = try context.fetch(descriptor)
 
-            // Find the first due card (new or review)
-            let dueCard = allCards.first { card in
+            // Filter out silenced decks
+            let activeCards = allCards.filter { card in
+                !isDeckSilenced(card.deck)
+            }
+
+            guard !activeCards.isEmpty else {
+                print("🎯 WidgetDataService: No active cards (all decks may be silenced)")
+                return nil
+            }
+
+            // Prioritize: new cards first, then due cards sorted by nextReview date
+            let newCards = activeCards.filter { card in
+                card.reviewSessions?.isEmpty ?? true
+            }
+
+            // Sort new cards by creation date (oldest first) for consistent selection
+            let sortedNewCards = newCards.sorted { card1, card2 in
+                return card1.createdAt < card2.createdAt
+            }
+
+            let dueCards = activeCards.filter { card in
                 guard let sessions = card.reviewSessions, !sessions.isEmpty else {
-                    return true // New cards are prioritized
+                    return false // Already handled as new cards
                 }
                 return sessions.contains { ($0.nextReview ?? Date()) <= now }
             }
 
-            guard let card = dueCard else {
+            // Sort due cards by nextReview date (earliest first)
+            // Cards with nil nextReview are treated as most urgent (Date.distantPast)
+            let sortedDueCards = dueCards.sorted { card1, card2 in
+                let sessions1 = card1.reviewSessions ?? []
+                let sessions2 = card2.reviewSessions ?? []
+                
+                // Get the earliest nextReview for each card
+                let nextReviews1 = sessions1.compactMap { $0.nextReview }
+                let nextReviews2 = sessions2.compactMap { $0.nextReview }
+                
+                // If a card has no valid nextReview dates, it's most urgent (nil = due now)
+                if nextReviews1.isEmpty && nextReviews2.isEmpty {
+                    return false // Equal priority, maintain order
+                } else if nextReviews1.isEmpty {
+                    return true // Card1 has nil nextReview, prioritize it
+                } else if nextReviews2.isEmpty {
+                    return false // Card2 has nil nextReview, prioritize it
+                }
+                
+                // Both cards have valid nextReview dates, sort by earliest
+                let nextReview1 = nextReviews1.min() ?? Date.distantFuture
+                let nextReview2 = nextReviews2.min() ?? Date.distantFuture
+                return nextReview1 < nextReview2
+            }
+
+            // Get the top card: oldest new card first, then earliest due card
+            let topCard = sortedNewCards.first ?? sortedDueCards.first
+
+            guard let card = topCard else {
+                print("🎯 WidgetDataService: No due or new cards found")
                 return nil
             }
 
@@ -152,7 +224,7 @@ class WidgetDataService {
                 deckName = "Flashcards"
             }
 
-            print("🎯 WidgetDataService: Card deck relationship - deck exists: \(card.deck != nil), name: '\(card.deck?.name ?? "nil")'")
+            print("🎯 WidgetDataService: Selected top card - '\(card.question)' from '\(deckName)' (new: \(newCards.count), due: \(dueCards.count))")
 
             return WidgetCardData(
                 question: card.question,
@@ -164,6 +236,23 @@ class WidgetDataService {
             print("❌ WidgetDataService: Error fetching top card: \(error)")
             return nil
         }
+    }
+
+    /// Check if a deck is silenced (matches SpacedRepetitionService logic)
+    private func isDeckSilenced(_ deck: Deck?) -> Bool {
+        guard let deck = deck else { return false }
+        guard deck.isSilenced else { return false }
+        
+        if deck.silenceType == "permanent" {
+            return true
+        }
+        
+        if deck.silenceType == "temporary",
+           let endDate = deck.silenceEndDate {
+            return Date() < endDate
+        }
+        
+        return false
     }
 
     /// Call this when app becomes active to refresh widget data
@@ -192,7 +281,9 @@ class WidgetDataService {
 
         let hasTopCard = sharedDefaults.bool(forKey: "widget.topCard.hasContent")
         let topCardQuestion = sharedDefaults.string(forKey: "widget.topCard.question")
+        let topCardAnswer = sharedDefaults.string(forKey: "widget.topCard.answer")
         let topCardDeckName = sharedDefaults.string(forKey: "widget.topCard.deckName")
+        let topCardId = sharedDefaults.string(forKey: "widget.topCard.cardId")
 
         print("🎯 WidgetDataService Debug (Main App):")
         print("  - App Group Available: \(isAppGroupAvailable)")
@@ -203,14 +294,41 @@ class WidgetDataService {
         print("  - Has Top Card: \(hasTopCard)")
         if hasTopCard {
             print("  - Top Card Question: \(topCardQuestion ?? "N/A")")
+            print("  - Top Card Answer: \(topCardAnswer ?? "N/A")")
             print("  - Top Card Deck: \(topCardDeckName ?? "N/A")")
+            print("  - Top Card ID: \(topCardId ?? "N/A")")
         }
 
         // Also check SwiftData for cards
         Task { @MainActor in
             let counts = getDueCardCounts()
+            let topCard = getTopReviewCard()
             print("  - SwiftData Total Cards: \(counts.hasCards ? "Yes" : "No")")
             print("  - SwiftData Due Cards: \(counts.dueCount)")
+            if let card = topCard {
+                print("  - SwiftData Top Card: '\(card.question)' from '\(card.deckName)'")
+            } else {
+                print("  - SwiftData Top Card: None found")
+            }
+        }
+    }
+
+    /// Verify that data can be read back from shared UserDefaults (for debugging)
+    func verifyDataSharing() -> Bool {
+        // Write a test value and read it back
+        let testKey = "widget.test.sharing"
+        let testValue = UUID().uuidString
+        sharedDefaults.set(testValue, forKey: testKey)
+        sharedDefaults.synchronize()
+        
+        // Try to read it back
+        if let readValue = sharedDefaults.string(forKey: testKey), readValue == testValue {
+            sharedDefaults.removeObject(forKey: testKey)
+            print("✅ WidgetDataService: Data sharing verification successful")
+            return true
+        } else {
+            print("❌ WidgetDataService: Data sharing verification FAILED")
+            return false
         }
     }
 }
